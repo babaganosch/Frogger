@@ -29,6 +29,7 @@ public:
     }
     
     void Die() {
+        Send(PLAYER_DEATH);
         GameObject::Init();
         RemoveLife();
         if (lives < 0)
@@ -57,7 +58,6 @@ public:
         if (m == HIT)
         {
             SDL_Log("Player::Hit!");
-            Send(PLAYER_DEATH);
             Die();
         }
         if (m == ON_GROUND)
@@ -109,8 +109,8 @@ public:
         move_distance = 0.f;
         
         /* Setup frog bounding box */
-        go->bbox_left  = go->bbox_top = 2;
-        go->bbox_right = go->bbox_bot = go->bbox_bot-2;
+        go->bbox_left  = go->bbox_top = 4;
+        go->bbox_right = go->bbox_bot = go->bbox_bot-4;
         
         /* Make sure the frog faces upwards */
         RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
@@ -126,22 +126,22 @@ public:
         if (move_cooldown <= 0.f && dt > 0.f) {
             if (keys.right) {
                 moving = DIRECTION::RIGHT;
-                move_cooldown = move_timer_start * game_speed;
+                move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
             }
             if (keys.left) {
                 moving = DIRECTION::LEFT;
-                move_cooldown = move_timer_start * game_speed;
+                move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
             }
             if (keys.up) {
                 moving = DIRECTION::UP;
-                move_cooldown = move_timer_start * game_speed;
+                move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
             }
             if (keys.down) {
                 moving = DIRECTION::DOWN;
-                move_cooldown = move_timer_start * game_speed;
+                move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
             }
         }
@@ -246,3 +246,33 @@ public:
 
 
 
+class PlayerDeath : public GameObject
+{
+    
+public:
+
+    virtual ~PlayerDeath()    {        SDL_Log("PlayerDeath::~PlayerDeath");    }
+
+    virtual void Init(int x, int y)
+    {
+        SDL_Log("PlayerDeath::Init");
+        GameObject::Init();
+        horizontalPosition = x;
+        verticalPosition = y;
+        /* Restart the animation */
+        RenderComponent* rendererComponent = GetComponent<RenderComponent*>();
+        rendererComponent->SetImageIndex(0);
+    }
+    
+    virtual void Update(float dt)
+    {
+        GameObject::Update(dt);
+    }
+
+    virtual void Receive(Message m)
+    {
+        if (m == ANIMATION_END) {
+            enabled = false;
+        }
+    }
+};

@@ -13,6 +13,7 @@ class Game : public GameObject
 	
 	AvancezLib* engine;
 	Player * player;
+    PlayerDeath * player_death;
 	Sprite * life_sprite;
     Sprite * grass_purple;
     Sprite * grass_top;
@@ -107,6 +108,16 @@ public:
         player->AddComponent(car3_collider);
         player->AddComponent(car4_collider);
         
+        /* Player death animation */
+        player_death = new PlayerDeath();
+        RenderComponent * player_death_render = new RenderComponent();
+        player_death_render->Create(engine, player_death, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/frog/frog_death0.bmp", 8.f);
+        player_death_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog_death1.bmp");
+        player_death_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog_death2.bmp");
+        player_death->AddComponent(player_death_render);
+        player_death->AddReceiver(this);
+        game_objects.insert(player_death);
+        
         turtle_pool.Create(30);
         for (auto turtle = turtle_pool.pool.begin(); turtle != turtle_pool.pool.end(); turtle++)
         {
@@ -185,7 +196,7 @@ public:
             game_objects.insert(*car);
         }
         
-        car_pool_3.Create(6);
+        car_pool_3.Create(4);
         for (auto car = car_pool_3.pool.begin(); car != car_pool_3.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -261,16 +272,16 @@ public:
         game_timer  = 60.f;
         
         /* Timers */
-        log_timer_top    = 2.5f;
-        turtle_timer_top = 3.f;
-        log_timer_mid    = 3.f;
-        log_timer_bot    = 3.f;
-        turtle_timer_bot = 3.f;
-        car4_timer = 3.f;
-        car3_timer = 3.f;
-        car2_timer = 3.f;
-        car1_timer = 3.f;
-        car0_timer = 3.f;
+        log_timer_top    = 1.5f;
+        turtle_timer_top = 0.f;
+        log_timer_mid    = 0.f;
+        log_timer_bot    = 0.f;
+        turtle_timer_bot = 0.f;
+        car4_timer = 0.f;
+        car3_timer = 0.f;
+        car2_timer = 0.f;
+        car1_timer = 0.f;
+        car0_timer = 0.f;
         
 	}
 
@@ -285,7 +296,7 @@ public:
         
         /* Draw the BG */
         {
-            engine->drawRect(0, 0, SCREEN_WIDTH, GRASS_GREEN_ROW_TOP, c_river, false);
+            engine->drawRect(0, 0, SCREEN_WIDTH, GRASS_GREEN_ROW_TOP+8, c_river, false);
             int width0 = SCREEN_WIDTH/96;
             int width1 = SCREEN_WIDTH/CELL_S;
             /* Top Grass */
@@ -436,6 +447,12 @@ public:
             game_over = true;
 		}
         
+        if (m == PLAYER_DEATH)
+        {
+            SDL_Log("Player Died");
+            player_death->Init(player->horizontalPosition, player->verticalPosition);
+        }
+        
 	}
 
 	virtual void Destroy()
@@ -450,5 +467,6 @@ public:
         grass_top->destroy();
         
 		delete player;
+        delete player_death;
 	}
 };

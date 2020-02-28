@@ -53,7 +53,9 @@ void RenderComponent::Update(float dt)
     if (sprites.at(floor(image_index)))
         sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
     
+    int old_index = image_index;
     image_index = fmod(image_index + (animation_speed * dt), image_number);
+    if (image_index < old_index) go->Receive(ANIMATION_END);
 }
 
 void RenderComponent::Destroy()
