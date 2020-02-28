@@ -18,11 +18,21 @@ const unsigned int  LOG_ROW_1        = SCREEN_HEIGHT-(CELL_S*11);
 const unsigned int  LOG_ROW_0        = SCREEN_HEIGHT-(CELL_S*10);
 const unsigned int  TURTLE_ROW_0     = SCREEN_HEIGHT-(CELL_S*9);
 
+const unsigned int  CAR_LANE_4       = SCREEN_HEIGHT-(CELL_S*7);
+const unsigned int  CAR_LANE_3       = SCREEN_HEIGHT-(CELL_S*6);
+const unsigned int  CAR_LANE_2       = SCREEN_HEIGHT-(CELL_S*5);
+const unsigned int  CAR_LANE_1       = SCREEN_HEIGHT-(CELL_S*4);
+const unsigned int  CAR_LANE_0       = SCREEN_HEIGHT-(CELL_S*3);
+
 const unsigned int  GRASS_GREEN_ROW_TOP = SCREEN_HEIGHT-(CELL_S*8);
 const unsigned int  GRASS_GREEN_ROW_BOT = SCREEN_HEIGHT-(CELL_S*2);
 
 const float SLOW_PLATFORM_SPEED      = 60.f;
 const float FAST_PLATFORM_SPEED      = 120.f;
+
+const float SLOW_CAR_SPEED           = 60.f;
+const float MEDIUM_CAR_SPEED         = 90.f;
+const float FAST_CAR_SPEED           = 200.f;
 
 
 
@@ -36,6 +46,7 @@ float game_speed = 1.f;		// speed of the game; it is increased each time all the
 #include "player.h"
 #include "turtle.h"
 #include "log.h"
+#include "car.h"
 
 #include "game.h"
 

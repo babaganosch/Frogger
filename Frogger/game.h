@@ -17,12 +17,20 @@ class Game : public GameObject
     Sprite * grass_purple;
     Sprite * grass_top;
     
+    /* Platform pools */
     ObjectPool<Turtle> turtle_pool;
     ObjectPool<Log>    log_pool_small;
     ObjectPool<Log>    log_pool_medium;
     ObjectPool<Log>    log_pool_large;
-	
+    
+    /* Vehicle pools */
+    ObjectPool<Car>    car_pool_0;
+    ObjectPool<Car>    car_pool_1;
+    ObjectPool<Car>    car_pool_2;
+    ObjectPool<Car>    car_pool_3;
+    ObjectPool<Car>    car_pool_4;
 
+    /* Global */
 	unsigned int score;
     unsigned int hiScore;
     bool         game_over;
@@ -34,6 +42,12 @@ class Game : public GameObject
     float        log_timer_bot;
     float        turtle_timer_bot;
     float        turtle_timer_top;
+    
+    float        car0_timer;
+    float        car1_timer;
+    float        car2_timer;
+    float        car3_timer;
+    float        car4_timer;
 
 public:
 
@@ -48,7 +62,7 @@ public:
 		PlayerBehaviourComponent * player_behaviour = new PlayerBehaviourComponent();
 		player_behaviour->Create(engine, player, &game_objects);
         
-        
+        /* Platform colliders */
         GroundComponent * large_log_collider = new GroundComponent();
         large_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_large);
         GroundComponent * medium_log_collider = new GroundComponent();
@@ -58,6 +72,19 @@ public:
         GroundComponent * turtle_collider = new GroundComponent();
         turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &turtle_pool);
         
+        /* Vehicle colliders */
+        CollideComponent * car0_collider = new CollideComponent();
+        car0_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_0);
+        CollideComponent * car1_collider = new CollideComponent();
+        car1_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_1);
+        CollideComponent * car2_collider = new CollideComponent();
+        car2_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_2);
+        CollideComponent * car3_collider = new CollideComponent();
+        car3_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_3);
+        CollideComponent * car4_collider = new CollideComponent();
+        car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4);
+        
+        /* Renderer */
 		RenderComponent * player_render = new RenderComponent();
         player_render->Create(engine, player, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/frog/frog0.bmp", 0.f);
         player_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog1.bmp");
@@ -67,11 +94,18 @@ public:
         player->Create();
         player->AddComponent(player_behaviour);
         player->AddComponent(player_render);
+        player->AddReceiver(this);
+        game_objects.insert(player);
+        /* Player collision components */
         player->AddComponent(large_log_collider);
         player->AddComponent(medium_log_collider);
         player->AddComponent(small_log_collider);
         player->AddComponent(turtle_collider);
-        player->AddReceiver(this);
+        player->AddComponent(car0_collider);
+        player->AddComponent(car1_collider);
+        player->AddComponent(car2_collider);
+        player->AddComponent(car3_collider);
+        player->AddComponent(car4_collider);
         
         turtle_pool.Create(30);
         for (auto turtle = turtle_pool.pool.begin(); turtle != turtle_pool.pool.end(); turtle++)
@@ -135,7 +169,81 @@ public:
             game_objects.insert(*log);
         }
         
-        game_objects.insert(player);
+        
+        car_pool_4.Create(6);
+        for (auto car = car_pool_4.pool.begin(); car != car_pool_4.pool.end(); car++)
+        {
+            CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
+            car_behaviour->Create(engine, *car, &game_objects);
+            RenderComponent * car_renderer = new RenderComponent();
+            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car4.bmp", 0.f);
+            (*car)->Create();
+            (*car)->AddComponent(car_behaviour);
+            (*car)->AddComponent(car_renderer);
+            (*car)->AddReceiver(this);
+            
+            game_objects.insert(*car);
+        }
+        
+        car_pool_3.Create(6);
+        for (auto car = car_pool_3.pool.begin(); car != car_pool_3.pool.end(); car++)
+        {
+            CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
+            car_behaviour->Create(engine, *car, &game_objects);
+            RenderComponent * car_renderer = new RenderComponent();
+            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car3.bmp", 0.f);
+            (*car)->Create();
+            (*car)->AddComponent(car_behaviour);
+            (*car)->AddComponent(car_renderer);
+            (*car)->AddReceiver(this);
+            
+            game_objects.insert(*car);
+        }
+        
+        car_pool_2.Create(6);
+        for (auto car = car_pool_2.pool.begin(); car != car_pool_2.pool.end(); car++)
+        {
+            CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
+            car_behaviour->Create(engine, *car, &game_objects);
+            RenderComponent * car_renderer = new RenderComponent();
+            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car2.bmp", 0.f);
+            (*car)->Create();
+            (*car)->AddComponent(car_behaviour);
+            (*car)->AddComponent(car_renderer);
+            (*car)->AddReceiver(this);
+            
+            game_objects.insert(*car);
+        }
+        
+        car_pool_1.Create(6);
+        for (auto car = car_pool_1.pool.begin(); car != car_pool_1.pool.end(); car++)
+        {
+            CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
+            car_behaviour->Create(engine, *car, &game_objects);
+            RenderComponent * car_renderer = new RenderComponent();
+            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car1.bmp", 0.f);
+            (*car)->Create();
+            (*car)->AddComponent(car_behaviour);
+            (*car)->AddComponent(car_renderer);
+            (*car)->AddReceiver(this);
+            
+            game_objects.insert(*car);
+        }
+        
+        car_pool_0.Create(6);
+        for (auto car = car_pool_0.pool.begin(); car != car_pool_0.pool.end(); car++)
+        {
+            CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
+            car_behaviour->Create(engine, *car, &game_objects);
+            RenderComponent * car_renderer = new RenderComponent();
+            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car0.bmp", 0.f);
+            (*car)->Create();
+            (*car)->AddComponent(car_behaviour);
+            (*car)->AddComponent(car_renderer);
+            (*car)->AddReceiver(this);
+            
+            game_objects.insert(*car);
+        }
         
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
         grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
@@ -158,6 +266,12 @@ public:
         log_timer_mid    = 3.f;
         log_timer_bot    = 3.f;
         turtle_timer_bot = 3.f;
+        car4_timer = 3.f;
+        car3_timer = 3.f;
+        car2_timer = 3.f;
+        car1_timer = 3.f;
+        car0_timer = 3.f;
+        
 	}
 
 	virtual void Update(float dt)
@@ -200,6 +314,7 @@ public:
             }
             game_timer = clamp(game_timer - dt * running, 0.f, 100.f);
             
+            /* Platforms */
             log_timer_top    -= dt;
             turtle_timer_top -= dt;
             log_timer_mid    -= dt;
@@ -234,6 +349,38 @@ public:
                 turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
                 turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+64, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
             }
+            
+            
+            
+            /* Vehicles */
+            car4_timer -= dt;
+            car3_timer -= dt;
+            car2_timer -= dt;
+            car1_timer -= dt;
+            car0_timer -= dt;
+            
+            if (car4_timer <= 0.f) {
+                car4_timer = 2.5f;
+                car_pool_4.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_4+6, -SLOW_CAR_SPEED);
+            }
+            if (car3_timer <= 0.f) {
+                car3_timer = 2.5f;
+                car_pool_3.FirstAvailable()->Init(-32, CAR_LANE_3+2, FAST_CAR_SPEED);
+            }
+            if (car2_timer <= 0.f) {
+                car2_timer = 2.f;
+                car_pool_2.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_2+6, -MEDIUM_CAR_SPEED);
+            }
+            if (car1_timer <= 0.f) {
+                car1_timer = 2.f;
+                car_pool_1.FirstAvailable()->Init(-32, CAR_LANE_1+4, MEDIUM_CAR_SPEED);
+            }
+            if (car0_timer <= 0.f) {
+                car0_timer = 2.5f;
+                car_pool_0.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_0+2, -MEDIUM_CAR_SPEED);
+            }
+            
+            
         }
 	}
     

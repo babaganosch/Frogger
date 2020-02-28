@@ -4,7 +4,7 @@
 const float move_timer_start = 0.25f;
 const float jump_distance    = 32.f;
 const float move_speed       = 240.f;
-const int ground_check_timer = 3;
+const int ground_check_timer = 8;
 
 // the main player
 class Player : public GameObject
