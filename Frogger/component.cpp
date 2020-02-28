@@ -50,8 +50,17 @@ void RenderComponent::Update(float dt)
 	if (!go->enabled)
 		return;
     
-    if (sprites.at(floor(image_index)))
+    if (sprites.at(floor(image_index))) {
+        #ifndef SPRITE_DEBUG
         sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
+        #endif
+        #ifdef SPRITE_DEBUG
+        /* DEBUG: Draw size of sprite */
+        engine->drawRect(go->horizontalPosition, go->verticalPosition, go->horizontalPosition+go->width, go->verticalPosition+go->height, {0, 255, 255}, false);
+        /* DEBUG: Draw bounding box */
+        engine->drawRect(go->horizontalPosition+go->bbox_left, go->verticalPosition+go->bbox_top, go->horizontalPosition+go->bbox_right, go->verticalPosition+go->bbox_bot, {255, 0, 0}, false);
+        #endif
+    }
     
     int old_index = image_index;
     image_index = fmod(image_index + (animation_speed * dt), image_number);
@@ -68,10 +77,11 @@ void RenderComponent::Destroy()
 }
 
 
-void CollideComponent::Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, ObjectPool<GameObject> * coll_objects)
+void CollideComponent::Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, ObjectPool<GameObject> * coll_objects, Message message_type)
 {
 	Component::Create(engine, go, game_objects);
 	this->coll_objects = coll_objects;
+    this->msg = message_type;
 }
 
 
@@ -98,46 +108,9 @@ void CollideComponent::Update(float dt)
 				(go0_bbox_bot   > go_bbox_top)   &&
 				(go0_bbox_top   < go_bbox_bot))
 			{
-				go->Receive(HIT);
-				go0->Receive(HIT);
+				go->Receive(msg);
+				go0->Receive(msg);
 			}
 		}
 	}
-}
-
-void GroundComponent::Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, ObjectPool<GameObject> * coll_objects)
-{
-    Component::Create(engine, go, game_objects);
-    this->coll_objects = coll_objects;
-}
-
-
-void GroundComponent::Update(float dt)
-{
-    for (auto i = 0; i < coll_objects->pool.size(); i++)
-    {
-        GameObject * go0 = coll_objects->pool[i];
-        if (go0->enabled)
-        {
-            /* Other bounding box */
-            int go0_bbox_left  = go0->horizontalPosition + go0->bbox_left;
-            int go0_bbox_right = go0->horizontalPosition + go0->bbox_right;
-            int go0_bbox_top   = go0->verticalPosition   + go0->bbox_top;
-            int go0_bbox_bot   = go0->verticalPosition   + go0->bbox_bot;
-            /* Our bounding box */
-            int go_bbox_left   = go->horizontalPosition  + go->bbox_left;
-            int go_bbox_right  = go->horizontalPosition  + go->bbox_right;
-            int go_bbox_top    = go->verticalPosition    + go->bbox_top;
-            int go_bbox_bot    = go->verticalPosition    + go->bbox_bot;
-            /* Are we colliding? */
-            if ((go0_bbox_left  < go_bbox_right) &&
-                (go0_bbox_right > go_bbox_left)  &&
-                (go0_bbox_bot   > go_bbox_top)   &&
-                (go0_bbox_top   < go_bbox_bot))
-            {
-                // Tell the frog it's on ground
-                go->Receive(ON_GROUND);
-            }
-        }
-    }
 }

@@ -9,8 +9,6 @@
 #ifndef car_h
 #define car_h
 
-#include <iostream>
-
 class Car : public GameObject
 {
 public:

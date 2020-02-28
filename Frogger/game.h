@@ -13,7 +13,8 @@ class Game : public GameObject
 	
 	AvancezLib* engine;
 	Player * player;
-    PlayerDeath * player_death;
+    PlayerDeath * player_drown;
+    PlayerDeath * player_roadkill;
 	Sprite * life_sprite;
     Sprite * grass_purple;
     Sprite * grass_top;
@@ -64,26 +65,26 @@ public:
 		player_behaviour->Create(engine, player, &game_objects);
         
         /* Platform colliders */
-        GroundComponent * large_log_collider = new GroundComponent();
-        large_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_large);
-        GroundComponent * medium_log_collider = new GroundComponent();
-        medium_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_medium);
-        GroundComponent * small_log_collider = new GroundComponent();
-        small_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_small);
-        GroundComponent * turtle_collider = new GroundComponent();
-        turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &turtle_pool);
+        CollideComponent * large_log_collider = new CollideComponent();
+        large_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_large, ON_GROUND);
+        CollideComponent * medium_log_collider = new CollideComponent();
+        medium_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_medium, ON_GROUND);
+        CollideComponent * small_log_collider = new CollideComponent();
+        small_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_small, ON_GROUND);
+        CollideComponent * turtle_collider = new CollideComponent();
+        turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &turtle_pool, ON_GROUND);
         
         /* Vehicle colliders */
         CollideComponent * car0_collider = new CollideComponent();
-        car0_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_0);
+        car0_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_0, HIT);
         CollideComponent * car1_collider = new CollideComponent();
-        car1_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_1);
+        car1_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_1, HIT);
         CollideComponent * car2_collider = new CollideComponent();
-        car2_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_2);
+        car2_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_2, HIT);
         CollideComponent * car3_collider = new CollideComponent();
-        car3_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_3);
+        car3_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_3, HIT);
         CollideComponent * car4_collider = new CollideComponent();
-        car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4);
+        car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4, HIT);
         
         /* Renderer */
 		RenderComponent * player_render = new RenderComponent();
@@ -109,14 +110,25 @@ public:
         player->AddComponent(car4_collider);
         
         /* Player death animation */
-        player_death = new PlayerDeath();
-        RenderComponent * player_death_render = new RenderComponent();
-        player_death_render->Create(engine, player_death, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/frog/frog_death0.bmp", 8.f);
-        player_death_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog_death1.bmp");
-        player_death_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog_death2.bmp");
-        player_death->AddComponent(player_death_render);
-        player_death->AddReceiver(this);
-        game_objects.insert(player_death);
+        player_drown = new PlayerDeath();
+        RenderComponent * player_drown_render = new RenderComponent();
+        player_drown_render->Create(engine, player_drown, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_drown0.bmp", 6.f);
+        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown1.bmp");
+        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown2.bmp");
+        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_drown->AddComponent(player_drown_render);
+        
+        player_roadkill = new PlayerDeath();
+        RenderComponent * player_roadkill_render = new RenderComponent();
+        player_roadkill_render->Create(engine, player_roadkill, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill0.bmp", 6.f);
+        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill1.bmp");
+        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill2.bmp");
+        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_roadkill->AddComponent(player_roadkill_render);
         
         turtle_pool.Create(30);
         for (auto turtle = turtle_pool.pool.begin(); turtle != turtle_pool.pool.end(); turtle++)
@@ -317,6 +329,8 @@ public:
         
         /* Make sure player is rendered last */
         player->Update(0);
+        player_drown->Update(dt);
+        player_roadkill->Update(dt);
         
         /* Spawn new entities */
         if (!game_over) {
@@ -447,10 +461,16 @@ public:
             game_over = true;
 		}
         
-        else if (m == PLAYER_DEATH)
+        else if (m == PLAYER_DROWN)
         {
-            SDL_Log("Player Died");
-            player_death->Init(player->horizontalPosition, player->verticalPosition);
+            SDL_Log("Player Drowned");
+            player_drown->Init(player->horizontalPosition, player->verticalPosition);
+        }
+        
+        else if (m == PLAYER_ROADKILL)
+        {
+            SDL_Log("Player died on land");
+            player_roadkill->Init(player->horizontalPosition, player->verticalPosition);
         }
         
         else if (m == VERTICAL_ADVANCEMENT)
@@ -471,6 +491,7 @@ public:
         grass_top->destroy();
         
 		delete player;
-        delete player_death;
+        delete player_drown;
+        delete player_roadkill;
 	}
 };

@@ -45,8 +45,10 @@ public:
         RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
         rendererComponent->SetImageIndex(0);
         /* Setup turtle bounding box */
-        go->bbox_left  = go->bbox_top = 4;
-        go->bbox_right = go->bbox_bot = go->bbox_bot-4;
+        go->bbox_left  = 4;
+        go->bbox_top   = 4;
+        go->bbox_right = go->width  -4;
+        go->bbox_bot   = go->height -4;
     }
 
     virtual void Update(float dt) {

@@ -29,7 +29,11 @@ public:
     }
     
     void Die() {
-        Send(PLAYER_DEATH);
+        if (verticalPosition <= TURTLE_ROW_0) {
+            Send(PLAYER_DROWN);
+        } else {
+            Send(PLAYER_ROADKILL);
+        }
         GameObject::Init();
         RemoveLife();
         if (lives < 0)
@@ -111,8 +115,10 @@ public:
         move_distance = 0.f;
         
         /* Setup frog bounding box */
-        go->bbox_left  = go->bbox_top = 4;
-        go->bbox_right = go->bbox_bot = go->bbox_bot-4;
+        go->bbox_left  = 4;
+        go->bbox_top   = 4;
+        go->bbox_right = go->width  -4;
+        go->bbox_bot   = go->height -4;
         
         /* Make sure the frog faces upwards */
         RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
