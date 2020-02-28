@@ -21,7 +21,7 @@ public:
 
     virtual void Init(int x, int y, int spd)
     {
-        SDL_Log("Car::Car");
+        //SDL_Log("Car::Car");
         GameObject::Init();
         horizontalPosition = x;
         verticalPosition   = y;

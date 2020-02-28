@@ -19,7 +19,7 @@ public:
 
     virtual void Init(int x, int y, int spd)
     {
-        SDL_Log("Log::Log");
+        //SDL_Log("Log::Log");
         GameObject::Init();
         horizontalPosition = x;
         verticalPosition   = y;
