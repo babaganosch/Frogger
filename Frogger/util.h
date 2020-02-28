@@ -11,6 +11,12 @@
 
 /* Clamp: Helper function to clamp values into an interval */
 double clamp(double x, double lower, double upper);
-bool   percentChance(int percent);
+
+/* PercentChance: Returns true or false, based on a percentage */
+bool percentChance(int percent);
+
+/* Random: Returns a value between 0 and the parameter */
+float random(float value);
+int  irandom(int value);
 
 #endif /* util_h */

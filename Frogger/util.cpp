@@ -6,6 +6,7 @@
 //  Copyright © 2020 Lars Andersson. All rights reserved.
 //
 #include <math.h>
+#include <stdlib.h>
 #include "util.h"
 
 double clamp(double x, double lower, double upper)
@@ -14,6 +15,13 @@ double clamp(double x, double lower, double upper)
 }
 
 bool percentChance(int percent) {
-    
-    return true;
+    return (rand() % 100) < percent;
+}
+
+float random(float value) {
+    return (rand() / (float)RAND_MAX) * value;
+}
+
+int irandom(int value) {
+    return rand() % value;
 }
