@@ -447,12 +447,16 @@ public:
             game_over = true;
 		}
         
-        if (m == PLAYER_DEATH)
+        else if (m == PLAYER_DEATH)
         {
             SDL_Log("Player Died");
             player_death->Init(player->horizontalPosition, player->verticalPosition);
         }
         
+        else if (m == VERTICAL_ADVANCEMENT)
+        {
+            score += 10;
+        }
 	}
 
 	virtual void Destroy()

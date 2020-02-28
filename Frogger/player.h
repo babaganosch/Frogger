@@ -79,6 +79,7 @@ class PlayerBehaviourComponent : public Component
 {
     double move_distance;
     double move_cooldown;
+    int    top_y;
     
     DIRECTION moving;
     
@@ -102,6 +103,7 @@ public:
         /* Place the frog at the starting position */
 		go->horizontalPosition = SCREEN_WIDTH / 2;
 		go->verticalPosition = SCREEN_HEIGHT - 64;
+        top_y = go->verticalPosition;
         
         /* Initialize the frog */
         move_cooldown = move_timer_start;
@@ -224,6 +226,11 @@ public:
                 /* Clamp the frog to a nice value */
                 go->horizontalPosition = floor(go->horizontalPosition);
                 go->verticalPosition = floor(go->verticalPosition);
+            }
+            
+            if (go->verticalPosition < top_y) {
+                top_y = go->verticalPosition;
+                go->Send(VERTICAL_ADVANCEMENT);
             }
         }
         
