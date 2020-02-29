@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 
 const float move_timer_start = 0.25f;
 const float jump_distance    = 32.f;
@@ -70,6 +69,12 @@ public:
             ground_timer = ground_check_timer;
             on_ground = true;
         }
+        if (m == POCKET_REACHED)
+        {
+            SDL_Log("Pocket reached!");
+            Send(POCKET_REACHED);
+            GameObject::Init();
+        }
     }
 
     void RemoveLife()
@@ -110,7 +115,7 @@ public:
         top_y = go->verticalPosition;
         
         /* Initialize the frog */
-        move_cooldown = move_timer_start;
+        move_cooldown = move_timer_start * 3.f;
         moving = DIRECTION::NONE;
         move_distance = 0.f;
         
@@ -275,6 +280,7 @@ public:
         /* Restart the animation */
         RenderComponent* rendererComponent = GetComponent<RenderComponent*>();
         rendererComponent->SetImageIndex(0);
+        bbox_right = 0; bbox_top = 0; bbox_left = 0; bbox_bot = 0;
     }
     
     virtual void Update(float dt)

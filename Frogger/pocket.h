@@ -17,14 +17,21 @@ public:
 
     virtual void Init(int x, int y)
     {
-        //SDL_Log("Car::Car");
+        //SDL_Log("Pocket::Pocket");
         GameObject::Init();
         horizontalPosition = x;
         verticalPosition   = y;
+        bbox_left  = 8;
+        bbox_top   = 0;
+        bbox_right = 24;
+        bbox_bot   = 20;
     }
 
     virtual void Receive(Message m)
     {
+        if (m == POCKET_REACHED) {
+            enabled = false;
+        }
     }
 };
 

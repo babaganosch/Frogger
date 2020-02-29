@@ -4,7 +4,8 @@
 #include <SDL_ttf.h>
 
 enum class H_ALIGN { LEFT, CENTER, RIGHT };
-enum class DIRECTION { LEFT, RIGHT, UP, DOWN, NONE };
+enum class V_ALIGN { TOP, CENTER, BOT };
+enum class DIRECTION { NONE, LEFT, RIGHT, UP, DOWN };
 
 class Sprite
 {
@@ -55,7 +56,7 @@ public:
     Sprite* createSprite(const char* name);
 
     // Draws the given text.
-    void drawText(int x, int y, const char* msg, H_ALIGN halign, SDL_Color col);
+    void drawText(int x, int y, const char* msg, H_ALIGN halign, V_ALIGN valign, SDL_Color col);
     
     // Draws a rectangle
     void drawRect(int x0, int y0, int x1, int y1, SDL_Color col, bool border);
@@ -70,7 +71,8 @@ public:
         bool right; // right arrow
         bool up;    // up arrow
         bool down;  // down arrow
-        bool esc;   // escape button
+        bool restart; // r-key
+        bool esc;     // escape button
     };
 
     // Returns the keyboard status. If a flag is set, the corresponding key is being held down.

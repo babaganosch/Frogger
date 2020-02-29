@@ -41,6 +41,7 @@ bool AvancezLib::init(int width, int height)
     key.up    = false;
     key.down  = false;
     key.esc   = false;
+    key.restart = false;
 
     //Initialize renderer color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -105,6 +106,9 @@ void AvancezLib::processInput()
             case SDLK_RIGHT:
                 key.right = true;
                 break;
+            case SDLK_r:
+                key.restart = true;
+                break;
             }
         }
 
@@ -126,6 +130,9 @@ void AvancezLib::processInput()
                break;
             case SDLK_DOWN:
                 key.down = false;
+                break;
+            case SDLK_r:
+                key.restart = false;
                 break;
             }
         }
@@ -186,7 +193,7 @@ void AvancezLib::drawRect(int x0, int y0, int x1, int y1, SDL_Color col, bool bo
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }
 
-void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, SDL_Color col)
+void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIGN valign, SDL_Color col)
 {
     SDL_Surface* surf = TTF_RenderText_Solid(font, msg, col); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
 
@@ -197,6 +204,9 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, SDL_Co
     SDL_QueryTexture(msg_texture, NULL, NULL, &w, &h);
     if (halign == H_ALIGN::CENTER)   x -= w/2;
     else if (halign == H_ALIGN::RIGHT) x -= w;
+    if (valign == V_ALIGN::CENTER)   y -= h/2;
+    else if (valign == V_ALIGN::BOT)   y -= h;
+    
     SDL_Rect dst_rect = { x, y, w, h };
 
     SDL_RenderCopy(renderer, msg_texture, NULL, &dst_rect);
@@ -218,6 +228,7 @@ void AvancezLib::getKeyStatus(KeyStatus & keys)
     keys.up = key.up;
     keys.down = key.down;
     keys.esc = key.esc;
+    keys.restart = key.restart;
 }
 
 

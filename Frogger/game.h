@@ -19,6 +19,14 @@ class Game : public GameObject
     Sprite * grass_purple;
     Sprite * grass_top;
     
+    /* Goal */
+    bool pocket0, pocket1, pocket2, pocket3, pocket4;
+    bool victory;
+    float wink_timer;
+    Sprite * victory_frog;
+    Sprite * victory_frog_wink;
+    ObjectPool<Pocket> goal_pool;
+    
     /* Platform pools */
     ObjectPool<Turtle> turtle_pool;
     ObjectPool<Log>    log_pool_small;
@@ -86,6 +94,10 @@ public:
         CollideComponent * car4_collider = new CollideComponent();
         car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4, HIT);
         
+        /* Goal colliders */
+        CollideComponent * pocket_collider = new CollideComponent();
+        pocket_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &goal_pool, POCKET_REACHED);
+        
         /* Renderer */
 		RenderComponent * player_render = new RenderComponent();
         player_render->Create(engine, player, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/frog/frog0.bmp", 0.f);
@@ -108,11 +120,12 @@ public:
         player->AddComponent(car2_collider);
         player->AddComponent(car3_collider);
         player->AddComponent(car4_collider);
+        player->AddComponent(pocket_collider);
         
         /* Player death animation */
         player_drown = new PlayerDeath();
         RenderComponent * player_drown_render = new RenderComponent();
-        player_drown_render->Create(engine, player_drown, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_drown0.bmp", 6.f);
+        player_drown_render->Create(engine, player_drown, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_drown0.bmp", 4.f);
         player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown1.bmp");
         player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown2.bmp");
         player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
@@ -122,13 +135,25 @@ public:
         
         player_roadkill = new PlayerDeath();
         RenderComponent * player_roadkill_render = new RenderComponent();
-        player_roadkill_render->Create(engine, player_roadkill, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill0.bmp", 6.f);
+        player_roadkill_render->Create(engine, player_roadkill, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill0.bmp", 4.f);
         player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill1.bmp");
         player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill2.bmp");
         player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
         player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
         player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
         player_roadkill->AddComponent(player_roadkill_render);
+        
+        goal_pool.Create(5);
+        for (auto pocket = goal_pool.pool.begin(); pocket != goal_pool.pool.end(); pocket++)
+        {
+            PocketBehaviourComponent * pocket_behaviour = new PocketBehaviourComponent();
+            pocket_behaviour->Create(engine, *pocket, &game_objects);
+            (*pocket)->Create();
+            (*pocket)->AddComponent(pocket_behaviour);
+            (*pocket)->AddReceiver(this);
+            
+            game_objects.insert(*pocket);
+        }
         
         turtle_pool.Create(30);
         for (auto turtle = turtle_pool.pool.begin(); turtle != turtle_pool.pool.end(); turtle++)
@@ -271,17 +296,20 @@ public:
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
         grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
         grass_top    = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_top.bmp");
+        victory_frog = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog0.bmp");
+        victory_frog_wink = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog1.bmp");
 	}
 
 	virtual void Init()
 	{
 		player->Init();
 
+        /* Globals */
 		enabled     = true;
         game_over   = false;
         score       = 0;
-        hiScore     = 4620;
-        game_timer  = 60.f;
+        hiScore     = 0;
+        game_timer  = GAME_TIMER;
         
         /* Timers */
         log_timer_top    = 1.5f;
@@ -295,7 +323,52 @@ public:
         car1_timer = 0.f;
         car0_timer = 0.f;
         
+        /* Pockets */
+        pocket0 = false;
+        pocket1 = false;
+        pocket2 = false;
+        pocket3 = false;
+        pocket4 = false;
+        victory = false;
+        wink_timer = 0.f;
+        /* Init 5 pockets */
+        for (int x = 16; x < SCREEN_WIDTH; x += 96) {
+            goal_pool.FirstAvailable()->Init(x, 96);
+        }
 	}
+    
+    void ResetPockets() {
+        pocket0 = pocket1 = pocket2 = pocket3 = pocket4 = 0;
+        for (auto pocket = goal_pool.pool.begin(); pocket != goal_pool.pool.end(); pocket++)
+        {
+            (*pocket)->enabled = false;
+        }
+        /* Init 5 pockets */
+        for (int x = 16; x < SCREEN_WIDTH; x += 96) {
+            goal_pool.FirstAvailable()->Init(x, 96);
+        }
+    }
+    
+    void NextLevel() {
+        victory     = false;
+        wink_timer  = 0.f;
+        game_timer  = GAME_TIMER;
+        game_speed *= 1.1;
+        pocket0 = pocket1 = pocket2 = pocket3 = pocket4 = 0;
+        
+        ResetPockets();
+    }
+    
+    void Restart() {
+        player->Init();
+        game_over   = false;
+        victory     = false;
+        score       = 0;
+        game_timer  = GAME_TIMER;
+        game_speed  = 1.f;
+        
+        ResetPockets();
+    }
 
 	virtual void Update(float dt)
 	{
@@ -305,6 +378,10 @@ public:
 			Destroy();
 			engine->quit();
 		}
+        
+        if (keys.restart) {
+            Restart();
+        }
         
         /* Draw the BG */
         {
@@ -320,20 +397,49 @@ public:
                 grass_purple->draw(x*CELL_S, GRASS_GREEN_ROW_TOP);
                 grass_purple->draw(x*CELL_S, GRASS_GREEN_ROW_BOT);
             }
+            /* Victory Frogs */
+            if (pocket0) {
+                if (wink_timer > .5f) victory_frog_wink->draw(16, 96);
+                else victory_frog->draw(16, 96);
+            }
+            if (pocket1) {
+                if (wink_timer > 1.f) victory_frog_wink->draw(112, 96);
+                else victory_frog->draw(112, 96);
+            }
+            if (pocket2) {
+                if (wink_timer > 1.5f) victory_frog_wink->draw(208, 96);
+                else victory_frog->draw(208, 96);
+            }
+            if (pocket3) {
+                if (wink_timer > 2.f) victory_frog_wink->draw(304, 96);
+                else victory_frog->draw(304, 96);
+            }
+            if (pocket4) {
+                if (wink_timer > 2.5f) victory_frog_wink->draw(400, 96);
+                else victory_frog->draw(400, 96);
+            }
         }
 
-        /* Freeze the objects when game over */
+        /* Freeze the objects when game over OR Victory */
         float running = game_over ? 0.0f : 1.0f;
-		for (auto go = game_objects.begin(); go != game_objects.end(); go++)
-			(*go)->Update(dt * running);
+        if (victory) running = 0.f;
+        for (auto go = game_objects.begin(); go != game_objects.end(); go++)
+            (*go)->Update(dt * running);
         
         /* Make sure player is rendered last */
         player->Update(0);
         player_drown->Update(dt);
         player_roadkill->Update(dt);
         
+        if (victory) {
+            wink_timer += (dt/game_speed);
+            if (wink_timer > 4.f) NextLevel();
+        }
+        
+        if (score > hiScore) hiScore = score;
+        
         /* Spawn new entities */
-        if (!game_over) {
+        if (running > 0.f) {
             if (game_timer <= 0.f) {
                 game_over = true;
             }
@@ -376,7 +482,6 @@ public:
             }
             
             
-            
             /* Vehicles */
             car4_timer -= dt;
             car3_timer -= dt;
@@ -405,7 +510,6 @@ public:
                 car_pool_0.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_0+2, -MEDIUM_CAR_SPEED);
             }
             
-            
         }
 	}
     
@@ -415,13 +519,13 @@ public:
         
         /* Score */
         snprintf(text, 256, "HI-SCORE");
-        engine->drawText(SCREEN_WIDTH / 2, 0, text, H_ALIGN::CENTER, c_white);
+        engine->drawText(SCREEN_WIDTH / 2, 0, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
         snprintf(text, 256, "%05d", hiScore);
-        engine->drawText(SCREEN_WIDTH / 2, 16, text, H_ALIGN::CENTER, c_red);
+        engine->drawText(SCREEN_WIDTH / 2, 16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
-        engine->drawText(SCREEN_WIDTH / 5, 0, text, H_ALIGN::CENTER, c_white);
+        engine->drawText(SCREEN_WIDTH / 5, 0, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
         snprintf(text, 256, "%05d", score);
-        engine->drawText(SCREEN_WIDTH / 5, 16, text, H_ALIGN::CENTER, c_red);
+        engine->drawText(SCREEN_WIDTH / 5, 16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         
         /* Time */
         {
@@ -430,7 +534,7 @@ public:
             int x1 = SCREEN_WIDTH  - 68;
             int y1 = SCREEN_HEIGHT;
             snprintf(text, 256, "TIME");
-            engine->drawText(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 16, text, H_ALIGN::RIGHT, c_yellow);
+            engine->drawText(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 16, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_yellow);
             engine->drawRect(x0, y0, x1, y1, c_green, false);
         }
         
@@ -446,7 +550,7 @@ public:
         /* Game Over */
         if (game_over) {
             snprintf(text, 256, "*** G A M E   O V E R ***");
-            engine->drawText(SCREEN_WIDTH / 2, 48, text, H_ALIGN::CENTER, c_white);
+            engine->drawText(SCREEN_WIDTH / 2, 48, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
         }
 
 		engine->swapBuffers();
@@ -477,6 +581,29 @@ public:
         {
             score += 10;
         }
+        
+        else if (m == POCKET_REACHED)
+        {
+            game_timer = GAME_TIMER;
+            score += 100;
+            int x = player->horizontalPosition;
+            if (x >= 368) {
+                pocket4 = true;
+            } else if (x >= 272) {
+                pocket3 = true;
+            } else if (x >= 176) {
+                pocket2 = true;
+            } else if (x >= 80) {
+                pocket1 = true;
+            } else {
+                pocket0 = true;
+            }
+            
+            if (pocket0 && pocket1 && pocket2 && pocket3 && pocket4) {
+                /* Victory! */
+                victory = true;
+            }
+        }
 	}
 
 	virtual void Destroy()
@@ -489,6 +616,8 @@ public:
 		life_sprite->destroy();
         grass_purple->destroy();
         grass_top->destroy();
+        victory_frog->destroy();
+        victory_frog_wink->destroy();
         
 		delete player;
         delete player_drown;

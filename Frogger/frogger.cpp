@@ -27,6 +27,8 @@ const unsigned int  CAR_LANE_0       = SCREEN_HEIGHT-(CELL_S*3);
 const unsigned int  GRASS_GREEN_ROW_TOP = SCREEN_HEIGHT-(CELL_S*8);
 const unsigned int  GRASS_GREEN_ROW_BOT = SCREEN_HEIGHT-(CELL_S*2);
 
+const float GAME_TIMER               = 60.f;
+
 const float SLOW_PLATFORM_SPEED      = 60.f;
 const float FAST_PLATFORM_SPEED      = 120.f;
 

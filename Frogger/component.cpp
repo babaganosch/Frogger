@@ -53,8 +53,7 @@ void RenderComponent::Update(float dt)
     if (sprites.at(floor(image_index))) {
         #ifndef SPRITE_DEBUG
         sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
-        #endif
-        #ifdef SPRITE_DEBUG
+        #else
         /* DEBUG: Draw size of sprite */
         engine->drawRect(go->horizontalPosition, go->verticalPosition, go->horizontalPosition+go->width, go->verticalPosition+go->height, {0, 255, 255}, false);
         /* DEBUG: Draw bounding box */
