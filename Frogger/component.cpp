@@ -2,7 +2,6 @@
 #include "game_object.h"
 #include "avancezlib.h"
 #include "util.h"
-#include <iostream>
 
 void Component::Create(AvancezLib * engine, GameObject * go, std::set<GameObject*>* game_objects)
 {
@@ -51,17 +50,18 @@ void RenderComponent::Update(float dt)
 		return;
     
     if (sprites.at(floor(image_index))) {
-        #ifndef SPRITE_DEBUG
-        sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
-        #else
+        #ifdef SPRITE_DEBUG
         /* DEBUG: Draw size of sprite */
         engine->drawRect(go->horizontalPosition, go->verticalPosition, go->horizontalPosition+go->width, go->verticalPosition+go->height, {0, 255, 255}, false);
+        #endif
+        sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
+        #ifdef SPRITE_DEBUG
         /* DEBUG: Draw bounding box */
         engine->drawRect(go->horizontalPosition+go->bbox_left, go->verticalPosition+go->bbox_top, go->horizontalPosition+go->bbox_right, go->verticalPosition+go->bbox_bot, {255, 0, 0}, false);
         #endif
     }
     
-    int old_index = image_index;
+    float old_index = image_index;
     image_index = fmod(image_index + (animation_speed * dt), image_number);
     if (image_index < old_index) go->Receive(ANIMATION_END);
 }

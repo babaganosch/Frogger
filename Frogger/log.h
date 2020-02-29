@@ -24,6 +24,8 @@ public:
         horizontalPosition = x;
         verticalPosition   = y;
         speed = spd;
+        bbox_left = 2;
+        bbox_right = width - 6;
     }
 
     virtual void Receive(Message m)

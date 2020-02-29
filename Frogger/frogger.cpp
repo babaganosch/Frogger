@@ -7,10 +7,12 @@
 #include <set>
 
 const unsigned int  SCREEN_WIDTH         = 448;
-const unsigned int  SCREEN_HEIGHT        = 544;
+const unsigned int  SCREEN_HEIGHT        = 512;
 const unsigned int  CELL_S               = 32;
 
 const unsigned int	NUM_LIVES            = 5;
+
+const unsigned int  POCKET_ROW       = CELL_S*2;
 
 const unsigned int  LOG_ROW_2        = SCREEN_HEIGHT-(CELL_S*13);
 const unsigned int  TURTLE_ROW_1     = SCREEN_HEIGHT-(CELL_S*12);
@@ -50,6 +52,7 @@ float game_speed = 1.f;		// speed of the game; it is increased each time all the
 #include "log.h"
 #include "car.h"
 #include "pocket.h"
+#include "animation.h"
 
 #include "game.h"
 

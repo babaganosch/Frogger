@@ -57,6 +57,7 @@ public:
 
     // Draws the given text.
     void drawText(int x, int y, const char* msg, H_ALIGN halign, V_ALIGN valign, SDL_Color col);
+    void drawText(int x, int y, const char* msg, H_ALIGN halign, V_ALIGN valign, SDL_Color col, SDL_Color bg);
     
     // Draws a rectangle
     void drawRect(int x0, int y0, int x1, int y1, SDL_Color col, bool border);

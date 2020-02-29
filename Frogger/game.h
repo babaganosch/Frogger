@@ -2,6 +2,7 @@
 
 /* Draw colors */
 const SDL_Color c_white  = { 255, 255, 255 };
+const SDL_Color c_black  = { 0,   0,   0   };
 const SDL_Color c_red    = { 255, 0,   0   };
 const SDL_Color c_yellow = { 255, 255, 0   };
 const SDL_Color c_green  = { 33,  222, 0   };
@@ -22,10 +23,15 @@ class Game : public GameObject
     /* Goal */
     bool pocket0, pocket1, pocket2, pocket3, pocket4;
     bool victory;
+    int  victory_time;
     float wink_timer;
     Sprite * victory_frog;
     Sprite * victory_frog_wink;
     ObjectPool<Pocket> goal_pool;
+    
+    /* Score pools */
+    ObjectPool<ScoreAnimation>    score100_pool;
+    ObjectPool<ScoreAnimation>    score200_pool;
     
     /* Platform pools */
     ObjectPool<Turtle> turtle_pool;
@@ -44,6 +50,7 @@ class Game : public GameObject
 	unsigned int score;
     unsigned int hiScore;
     bool         game_over;
+    float        show_victory_timer;
     
     /* Timers */
     float        game_timer;
@@ -151,7 +158,6 @@ public:
             (*pocket)->Create();
             (*pocket)->AddComponent(pocket_behaviour);
             (*pocket)->AddReceiver(this);
-            
             game_objects.insert(*pocket);
         }
         
@@ -168,7 +174,6 @@ public:
             (*turtle)->AddComponent(turtle_behaviour);
             (*turtle)->AddComponent(turtle_render);
             (*turtle)->AddReceiver(this);
-            
             game_objects.insert(*turtle);
         }
         
@@ -183,7 +188,6 @@ public:
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
             (*log)->AddReceiver(this);
-            
             game_objects.insert(*log);
         }
         
@@ -198,7 +202,6 @@ public:
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
             (*log)->AddReceiver(this);
-            
             game_objects.insert(*log);
         }
         
@@ -213,7 +216,6 @@ public:
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
             (*log)->AddReceiver(this);
-            
             game_objects.insert(*log);
         }
         
@@ -229,7 +231,6 @@ public:
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
             (*car)->AddReceiver(this);
-            
             game_objects.insert(*car);
         }
         
@@ -244,7 +245,6 @@ public:
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
             (*car)->AddReceiver(this);
-            
             game_objects.insert(*car);
         }
         
@@ -259,7 +259,6 @@ public:
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
             (*car)->AddReceiver(this);
-            
             game_objects.insert(*car);
         }
         
@@ -274,7 +273,6 @@ public:
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
             (*car)->AddReceiver(this);
-            
             game_objects.insert(*car);
         }
         
@@ -289,8 +287,28 @@ public:
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
             (*car)->AddReceiver(this);
-            
             game_objects.insert(*car);
+        }
+        
+        score100_pool.Create(3);
+        for (auto scr = score100_pool.pool.begin(); scr != score100_pool.pool.end(); scr++)
+        {
+            RenderComponent * scr_renderer = new RenderComponent();
+            scr_renderer->Create(engine, *scr, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/score_100.bmp", 1.f);
+            (*scr)->Create();
+            (*scr)->AddComponent(scr_renderer);
+            (*scr)->AddReceiver(this);
+            game_objects.insert(*scr);
+        }
+        score200_pool.Create(3);
+        for (auto scr = score200_pool.pool.begin(); scr != score200_pool.pool.end(); scr++)
+        {
+            RenderComponent * scr_renderer = new RenderComponent();
+            scr_renderer->Create(engine, *scr, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/score_200.bmp", 1.f);
+            (*scr)->Create();
+            (*scr)->AddComponent(scr_renderer);
+            (*scr)->AddReceiver(this);
+            game_objects.insert(*scr);
         }
         
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
@@ -310,6 +328,8 @@ public:
         score       = 0;
         hiScore     = 0;
         game_timer  = GAME_TIMER;
+        victory_time       = 0;
+        show_victory_timer = 0.f;
         
         /* Timers */
         log_timer_top    = 1.5f;
@@ -331,10 +351,7 @@ public:
         pocket4 = false;
         victory = false;
         wink_timer = 0.f;
-        /* Init 5 pockets */
-        for (int x = 16; x < SCREEN_WIDTH; x += 96) {
-            goal_pool.FirstAvailable()->Init(x, 96);
-        }
+        ResetPockets();
 	}
     
     void ResetPockets() {
@@ -345,7 +362,7 @@ public:
         }
         /* Init 5 pockets */
         for (int x = 16; x < SCREEN_WIDTH; x += 96) {
-            goal_pool.FirstAvailable()->Init(x, 96);
+            goal_pool.FirstAvailable()->Init(x, POCKET_ROW);
         }
     }
     
@@ -390,7 +407,7 @@ public:
             int width1 = SCREEN_WIDTH/CELL_S;
             /* Top Grass */
             for (int x = 0; x <= width0; x++) {
-                grass_top->draw(x*96, CELL_S + 48);
+                grass_top->draw(x*96, CELL_S + 16);
             }
             /* Purple Grass */
             for (int x = 0; x < width1; x++) {
@@ -399,24 +416,24 @@ public:
             }
             /* Victory Frogs */
             if (pocket0) {
-                if (wink_timer > .5f) victory_frog_wink->draw(16, 96);
-                else victory_frog->draw(16, 96);
+                if (wink_timer > .5f) victory_frog_wink->draw(16, POCKET_ROW);
+                else victory_frog->draw(16, POCKET_ROW);
             }
             if (pocket1) {
-                if (wink_timer > 1.f) victory_frog_wink->draw(112, 96);
-                else victory_frog->draw(112, 96);
+                if (wink_timer > 1.f) victory_frog_wink->draw(112, POCKET_ROW);
+                else victory_frog->draw(112, POCKET_ROW);
             }
             if (pocket2) {
-                if (wink_timer > 1.5f) victory_frog_wink->draw(208, 96);
-                else victory_frog->draw(208, 96);
+                if (wink_timer > 1.5f) victory_frog_wink->draw(208, POCKET_ROW);
+                else victory_frog->draw(208, POCKET_ROW);
             }
             if (pocket3) {
-                if (wink_timer > 2.f) victory_frog_wink->draw(304, 96);
-                else victory_frog->draw(304, 96);
+                if (wink_timer > 2.f) victory_frog_wink->draw(304, POCKET_ROW);
+                else victory_frog->draw(304, POCKET_ROW);
             }
             if (pocket4) {
-                if (wink_timer > 2.5f) victory_frog_wink->draw(400, 96);
-                else victory_frog->draw(400, 96);
+                if (wink_timer > 2.5f) victory_frog_wink->draw(400, POCKET_ROW);
+                else victory_frog->draw(400, POCKET_ROW);
             }
         }
 
@@ -437,6 +454,7 @@ public:
         }
         
         if (score > hiScore) hiScore = score;
+        if (show_victory_timer > 0.f) show_victory_timer -= (dt/game_speed);
         
         /* Spawn new entities */
         if (running > 0.f) {
@@ -523,9 +541,9 @@ public:
         snprintf(text, 256, "%05d", hiScore);
         engine->drawText(SCREEN_WIDTH / 2, 16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
-        engine->drawText(SCREEN_WIDTH / 5, 0, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
+        engine->drawText(SCREEN_WIDTH / 4, 0, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);
         snprintf(text, 256, "%05d", score);
-        engine->drawText(SCREEN_WIDTH / 5, 16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
+        engine->drawText(SCREEN_WIDTH / 4, 16, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
         
         /* Time */
         {
@@ -535,7 +553,8 @@ public:
             int y1 = SCREEN_HEIGHT;
             snprintf(text, 256, "TIME");
             engine->drawText(SCREEN_WIDTH - 2, SCREEN_HEIGHT - 16, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_yellow);
-            engine->drawRect(x0, y0, x1, y1, c_green, false);
+            if (game_timer > 10) engine->drawRect(x0, y0, x1, y1, c_green, false);
+            else engine->drawRect(x0, y0, x1, y1, c_red, false);
         }
         
         /* Lives */
@@ -547,10 +566,16 @@ public:
             }
         }
         
+        /* Victory Time */
+        if (show_victory_timer > 0.f) {
+            snprintf(text, 256, "TIME %d", 60 - victory_time);
+            engine->drawText(SCREEN_WIDTH/2, SCREEN_HEIGHT/2+16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red, c_black);
+        }
+        
         /* Game Over */
         if (game_over) {
             snprintf(text, 256, "*** G A M E   O V E R ***");
-            engine->drawText(SCREEN_WIDTH / 2, 48, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
+            engine->drawText(SCREEN_WIDTH / 2, SCREEN_HEIGHT/3, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red, c_black);
         }
 
 		engine->swapBuffers();
@@ -584,8 +609,11 @@ public:
         
         else if (m == POCKET_REACHED)
         {
+            score += 50;
+            score += game_timer * 10;
+            victory_time = game_timer;
+            show_victory_timer = 4.f;
             game_timer = GAME_TIMER;
-            score += 100;
             int x = player->horizontalPosition;
             if (x >= 368) {
                 pocket4 = true;
@@ -602,6 +630,7 @@ public:
             if (pocket0 && pocket1 && pocket2 && pocket3 && pocket4) {
                 /* Victory! */
                 victory = true;
+                score += 1000;
             }
         }
 	}

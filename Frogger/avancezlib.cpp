@@ -215,6 +215,32 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIG
     SDL_FreeSurface(surf);
 }
 
+void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIGN valign, SDL_Color col, SDL_Color bg)
+{
+    SDL_Surface* surf = TTF_RenderText_Solid(font, msg, col); // as TTF_RenderText_Solid could only be used on SDL_Surface then you have to create the surface first
+
+    SDL_Texture* msg_texture = SDL_CreateTextureFromSurface(renderer, surf); //now you can convert it into a texture
+
+    int w = 0;
+    int h = 0;
+    SDL_QueryTexture(msg_texture, NULL, NULL, &w, &h);
+    if (halign == H_ALIGN::CENTER)   x -= w/2;
+    else if (halign == H_ALIGN::RIGHT) x -= w;
+    if (valign == V_ALIGN::CENTER)   y -= h/2;
+    else if (valign == V_ALIGN::BOT)   y -= h;
+    
+    SDL_Rect dst_rect = { x, y, w, h };
+    
+    SDL_SetRenderDrawColor(renderer, bg.r, bg.g, bg.b, bg.a);
+    SDL_RenderFillRect(renderer, &dst_rect);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+
+    SDL_RenderCopy(renderer, msg_texture, NULL, &dst_rect);
+
+    SDL_DestroyTexture(msg_texture);
+    SDL_FreeSurface(surf);
+}
+
 float AvancezLib::getElapsedTime()
 {
     return SDL_GetTicks() / 1000.f;

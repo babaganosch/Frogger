@@ -120,9 +120,9 @@ public:
         move_distance = 0.f;
         
         /* Setup frog bounding box */
-        go->bbox_left  = 4;
+        go->bbox_left  = 6;
         go->bbox_top   = 4;
-        go->bbox_right = go->width  -4;
+        go->bbox_right = go->width  -6;
         go->bbox_bot   = go->height -4;
         
         /* Make sure the frog faces upwards */
@@ -247,7 +247,7 @@ public:
         
         /* Keep the player within the world */
         go->horizontalPosition = clamp(go->horizontalPosition, 0.f, SCREEN_WIDTH-go->width);
-        go->verticalPosition   = clamp(go->verticalPosition,   0.f, SCREEN_HEIGHT-go->height);
+        go->verticalPosition   = clamp(go->verticalPosition,   0.f, SCREEN_HEIGHT-go->height-CELL_S);
 	}
     
     void OnGround() {
@@ -258,40 +258,6 @@ public:
                 ((Player*)go)->Die();
             }
             
-        }
-    }
-};
-
-
-
-class PlayerDeath : public GameObject
-{
-    
-public:
-
-    virtual ~PlayerDeath()    {        SDL_Log("PlayerDeath::~PlayerDeath");    }
-
-    virtual void Init(int x, int y)
-    {
-        SDL_Log("PlayerDeath::Init");
-        GameObject::Init();
-        horizontalPosition = x;
-        verticalPosition = y;
-        /* Restart the animation */
-        RenderComponent* rendererComponent = GetComponent<RenderComponent*>();
-        rendererComponent->SetImageIndex(0);
-        bbox_right = 0; bbox_top = 0; bbox_left = 0; bbox_bot = 0;
-    }
-    
-    virtual void Update(float dt)
-    {
-        GameObject::Update(dt);
-    }
-
-    virtual void Receive(Message m)
-    {
-        if (m == ANIMATION_END) {
-            enabled = false;
         }
     }
 };
