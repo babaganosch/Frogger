@@ -1,17 +1,34 @@
 #include "avancezlib.h"
 
+bool CheckGLError()
+{
+    bool ret = false;
+    GLenum err;
+    while((err = glGetError()) != GL_NO_ERROR)
+    {
+        printf("GL Error: %d\n", err);
+        ret = true;
+    }
+
+    return ret;
+}
+
 bool AvancezLib::init(int width, int height)
 {
     SDL_Log("Initializing the engine...\n");
-
+    
+    if (SDL_SetHint(SDL_HINT_RENDER_DRIVER,"opengles2") == SDL_FALSE) SDL_Log("Set Hint Failed!");
+    
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL failed the initialization: %s\n", SDL_GetError());
         return false;
     }
+    
+    SDL_GL_LoadLibrary(nullptr);
 
     //Create window
-    window = SDL_CreateWindow("Can it play FROGGER?", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Can it play FROGGER?", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Window could not be created! SDL_Error: %s\n", SDL_GetError());
@@ -25,6 +42,7 @@ bool AvancezLib::init(int width, int height)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return false;
     }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     TTF_Init();
     font = TTF_OpenFont("/Users/larsa/Chalmers/TDA572/Data/misc/PressStart2P.ttf", 16); //this opens a font style and sets a size
@@ -33,6 +51,31 @@ bool AvancezLib::init(int width, int height)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "font cannot be created! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
+    
+    SDL_GL_CreateContext( window );
+    if (glewInit() != GLEW_OK) {
+            std::cerr << "GLEW init failed" << std::endl;
+            abort();
+    } else if (not GLEW_ARB_shading_language_100 or not GLEW_ARB_vertex_shader or not GLEW_ARB_fragment_shader or not GLEW_ARB_shader_objects) {
+            std::cerr << "Shaders not available" << std::endl;
+            abort();
+    }
+    
+    printf("Supported GLSL version is %s.\n", (char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    
+    /* Load Shaders */
+    shader = compileShaderProgram("/Users/larsa/Chalmers/TDA572/shaders/vertex.glsl", "/Users/larsa/Chalmers/TDA572/shaders/fragment.glsl");
+    
+    texTarget = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    SDL_UnlockTexture( texTarget );
+    
+    glUseProgram(shader);
+    glEnable( GL_TEXTURE_2D );
+    glActiveTexture( GL_TEXTURE0 );
+    SDL_GL_BindTexture(texTarget, NULL, NULL );
+    glUniform1i( glGetUniformLocation( shader, "tex0" ), 0 );
+    glUseProgram(0);
 
     // initialize the keys
     key.fire  = false;
@@ -41,6 +84,7 @@ bool AvancezLib::init(int width, int height)
     key.up    = false;
     key.down  = false;
     key.esc   = false;
+    key.pause = false;
     key.restart = false;
 
     //Initialize renderer color
@@ -109,6 +153,9 @@ void AvancezLib::processInput()
             case SDLK_r:
                 key.restart = true;
                 break;
+            case SDLK_p:
+                key.pause = true;
+                break;
             }
         }
 
@@ -134,6 +181,9 @@ void AvancezLib::processInput()
             case SDLK_r:
                 key.restart = false;
                 break;
+            case SDLK_p:
+                key.pause = false;
+                break;
             }
         }
         
@@ -146,8 +196,30 @@ void AvancezLib::processInput()
 }
 
 void AvancezLib::swapBuffers() {
+    
+    SDL_SetRenderTarget(renderer, NULL);
+    //SDL_RenderClear(renderer);
+    
+    glUseProgram(shader);
+
+    if (SDL_GL_BindTexture(texTarget, NULL, NULL))
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GL_BindTexture error: %s\n",  SDL_GetError());
+    glActiveTexture( GL_TEXTURE0 );
+    glUniform1i( glGetUniformLocation( shader, "tex0" ), 0 );
+
+    glBegin(GL_QUADS);
+    glVertex2f(-1.0, -1.0);
+    glVertex2f(1.0,  -1.0);
+    glVertex2f(1.0,  1.0);
+    glVertex2f(-1.0, 1.0);
+    glEnd();
+    
+    SDL_GL_SwapWindow(window);
+    glUseProgram(NULL);
+    
+    if (SDL_SetRenderTarget(renderer, texTarget) != 0) SDL_Log("Error!!");
     //Update screen
-    SDL_RenderPresent(renderer);
+    //SDL_RenderPresent(renderer);
 }
 
 void AvancezLib::clearWindow() {
@@ -187,7 +259,7 @@ void AvancezLib::drawRect(int x0, int y0, int x1, int y1, SDL_Color col, bool bo
     rect.y = y0;
     rect.w = x1-x0;
     rect.h = y1-y0;
-    SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, 255);
+    SDL_SetRenderDrawColor(renderer, col.r, col.g, col.b, col.a);
     if (border) SDL_RenderDrawRect(renderer, &rect);
     else  SDL_RenderFillRect(renderer, &rect);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -199,8 +271,7 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIG
 
     SDL_Texture* msg_texture = SDL_CreateTextureFromSurface(renderer, surf); //now you can convert it into a texture
 
-    int w = 0;
-    int h = 0;
+    int w = 0, h = 0;
     SDL_QueryTexture(msg_texture, NULL, NULL, &w, &h);
     if (halign == H_ALIGN::CENTER)   x -= w/2;
     else if (halign == H_ALIGN::RIGHT) x -= w;
@@ -221,8 +292,7 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIG
 
     SDL_Texture* msg_texture = SDL_CreateTextureFromSurface(renderer, surf); //now you can convert it into a texture
 
-    int w = 0;
-    int h = 0;
+    int w = 0, h = 0;
     SDL_QueryTexture(msg_texture, NULL, NULL, &w, &h);
     if (halign == H_ALIGN::CENTER)   x -= w/2;
     else if (halign == H_ALIGN::RIGHT) x -= w;
@@ -241,6 +311,78 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIG
     SDL_FreeSurface(surf);
 }
 
+
+GLint AvancezLib::compileShader(const char* filename, GLenum type) {
+
+        FILE* file = fopen(filename, "rb");
+
+        if (file == NULL) {
+                std::cerr << "Cannot open shader " << filename << std::endl;
+                abort();
+        }
+
+        fseek(file, 0, SEEK_END);
+        const int size = (int)ftell(file);
+        rewind(file);
+
+        const GLchar* source = new GLchar[size+1];
+        fread(const_cast<char*>(source), sizeof(char), size, file);
+        const_cast<char&>(source[size]) = '\0';
+
+        const GLint shader = glCreateShader(type);
+
+        if (not shader) {
+                std::cerr << "Cannot create a shader of type " << shader << std::endl;
+                abort();
+        }
+
+        glShaderSource(shader, 1, &source, NULL);
+        glCompileShader(shader);
+
+        {
+                GLint compiled;
+                glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+                if (not compiled) {
+                        std::cerr << "Cannot compile shader " << filename << std::endl;
+                        GLsizei log_length = 0;
+                        GLchar message[1024];
+                        glGetShaderInfoLog(shader, 1024, &log_length, message);
+                        std::cerr << message << std::endl;
+                        abort();
+                }
+        }
+
+        return shader;
+
+}
+
+GLint AvancezLib::compileShaderProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename) {
+
+        const GLint program = glCreateProgram();
+
+        if (not program) {
+                std::cerr << "Cannot create a shader program" << std::endl;
+                abort();
+        }
+
+        glAttachShader(program, compileShader(vertexShaderFilename, GL_VERTEX_SHADER));
+        glAttachShader(program, compileShader(fragmentShaderFilename, GL_FRAGMENT_SHADER));
+
+        glLinkProgram(program);
+
+        {
+                GLint linked;
+                glGetProgramiv(program, GL_LINK_STATUS, &linked);
+                if (not linked) {
+                        std::cerr << "Cannot link shader program with shaders " << vertexShaderFilename << " and " << fragmentShaderFilename << std::endl;
+                        abort();
+                }
+        }
+
+        return program;
+
+}
+
 float AvancezLib::getElapsedTime()
 {
     return SDL_GetTicks() / 1000.f;
@@ -254,6 +396,7 @@ void AvancezLib::getKeyStatus(KeyStatus & keys)
     keys.up = key.up;
     keys.down = key.down;
     keys.esc = key.esc;
+    keys.pause = key.pause;
     keys.restart = key.restart;
 }
 

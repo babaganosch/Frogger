@@ -6,11 +6,11 @@
 
 #include <set>
 
-const unsigned int  SCREEN_WIDTH         = 448;
-const unsigned int  SCREEN_HEIGHT        = 512;
-const unsigned int  CELL_S               = 32;
+const unsigned int  SCREEN_WIDTH     = 448;
+const unsigned int  SCREEN_HEIGHT    = 512;
+const unsigned int  CELL_S           = 32;
 
-const unsigned int	NUM_LIVES            = 5;
+const unsigned int	NUM_LIVES        = 5;
 
 const unsigned int  POCKET_ROW       = CELL_S*2;
 

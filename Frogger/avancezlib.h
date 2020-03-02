@@ -1,7 +1,12 @@
 #pragma once
 
+
+
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
+#include <GL/glew.h>
+#include <OpenGL/gl.h>
+#include <iostream>
 
 enum class H_ALIGN { LEFT, CENTER, RIGHT };
 enum class V_ALIGN { TOP, CENTER, BOT };
@@ -73,6 +78,7 @@ public:
         bool up;    // up arrow
         bool down;  // down arrow
         bool restart; // r-key
+        bool pause;   // p-key
         bool esc;     // escape button
     };
 
@@ -87,9 +93,16 @@ public:
         return height;
     }
 
+    GLint compileShader(const char* filename, GLenum type);
+    GLint compileShaderProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename);
+    
 private:
     SDL_Window * window;
     SDL_Renderer * renderer;
+    GLint shader;
+    
+    SDL_Texture *texTarget;
+    GLint  gVertexPos2DLocation;
 
     TTF_Font* font;
 

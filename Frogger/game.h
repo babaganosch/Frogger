@@ -1,12 +1,13 @@
 #pragma once
 
 /* Draw colors */
-const SDL_Color c_white  = { 255, 255, 255 };
-const SDL_Color c_black  = { 0,   0,   0   };
-const SDL_Color c_red    = { 255, 0,   0   };
-const SDL_Color c_yellow = { 255, 255, 0   };
-const SDL_Color c_green  = { 33,  222, 0   };
-const SDL_Color c_river  = { 0,   0,   71  };
+const SDL_Color c_white  = { 255, 255, 255, 255 };
+const SDL_Color c_black  = { 0,   0,   0,   255 };
+const SDL_Color c_transp = { 0,   0,   0,   128 };
+const SDL_Color c_red    = { 255, 0,   0,   255 };
+const SDL_Color c_yellow = { 255, 255, 0,   255 };
+const SDL_Color c_green  = { 33,  222, 0,   255 };
+const SDL_Color c_river  = { 0,   0,   71,  255 };
 
 class Game : public GameObject
 {
@@ -19,6 +20,7 @@ class Game : public GameObject
 	Sprite * life_sprite;
     Sprite * grass_purple;
     Sprite * grass_top;
+    Sprite * level_sprite;
     
     /* Goal */
     bool pocket0, pocket1, pocket2, pocket3, pocket4;
@@ -50,7 +52,10 @@ class Game : public GameObject
 	unsigned int score;
     unsigned int hiScore;
     bool         game_over;
+    bool         paused;
     float        show_victory_timer;
+    float        button_bounce_timer;
+    int          level;
     
     /* Timers */
     float        game_timer;
@@ -220,7 +225,7 @@ public:
         }
         
         
-        car_pool_4.Create(6);
+        car_pool_4.Create(8);
         for (auto car = car_pool_4.pool.begin(); car != car_pool_4.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -234,7 +239,7 @@ public:
             game_objects.insert(*car);
         }
         
-        car_pool_3.Create(4);
+        car_pool_3.Create(5);
         for (auto car = car_pool_3.pool.begin(); car != car_pool_3.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -248,7 +253,7 @@ public:
             game_objects.insert(*car);
         }
         
-        car_pool_2.Create(6);
+        car_pool_2.Create(8);
         for (auto car = car_pool_2.pool.begin(); car != car_pool_2.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -262,7 +267,7 @@ public:
             game_objects.insert(*car);
         }
         
-        car_pool_1.Create(6);
+        car_pool_1.Create(8);
         for (auto car = car_pool_1.pool.begin(); car != car_pool_1.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -276,7 +281,7 @@ public:
             game_objects.insert(*car);
         }
         
-        car_pool_0.Create(6);
+        car_pool_0.Create(8);
         for (auto car = car_pool_0.pool.begin(); car != car_pool_0.pool.end(); car++)
         {
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
@@ -314,6 +319,7 @@ public:
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
         grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
         grass_top    = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_top.bmp");
+        level_sprite = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/level.bmp");
         victory_frog = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog0.bmp");
         victory_frog_wink = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog1.bmp");
 	}
@@ -325,11 +331,14 @@ public:
         /* Globals */
 		enabled     = true;
         game_over   = false;
+        paused      = false;
         score       = 0;
         hiScore     = 0;
+        level       = 1;
         game_timer  = GAME_TIMER;
         victory_time       = 0;
         show_victory_timer = 0.f;
+        button_bounce_timer = 0.f;
         
         /* Timers */
         log_timer_top    = 1.5f;
@@ -371,20 +380,33 @@ public:
         wink_timer  = 0.f;
         game_timer  = GAME_TIMER;
         game_speed *= 1.1;
+        level      += 1;
         pocket0 = pocket1 = pocket2 = pocket3 = pocket4 = 0;
         
         ResetPockets();
     }
     
+    void TogglePause() {
+        if (button_bounce_timer <= 0.f) {
+            paused = !paused;
+            if (paused) SDL_Log("Game Paused");
+            else SDL_Log("Game UnPaused");
+            button_bounce_timer = .25f;
+        }
+    }
+    
     void Restart() {
-        player->Init();
-        game_over   = false;
-        victory     = false;
-        score       = 0;
-        game_timer  = GAME_TIMER;
-        game_speed  = 1.f;
-        
-        ResetPockets();
+        if (button_bounce_timer <= 0.f) {
+            player->Init();
+            game_over   = false;
+            victory     = false;
+            score       = 0;
+            level       = 1;
+            game_timer  = GAME_TIMER;
+            game_speed  = 1.f;
+            button_bounce_timer = .25f;
+            ResetPockets();
+        }
     }
 
 	virtual void Update(float dt)
@@ -395,9 +417,11 @@ public:
 			Destroy();
 			engine->quit();
 		}
-        
         if (keys.restart) {
             Restart();
+        }
+        if (keys.pause) {
+            TogglePause();
         }
         
         /* Draw the BG */
@@ -437,9 +461,9 @@ public:
             }
         }
 
-        /* Freeze the objects when game over OR Victory */
+        /* Freeze the objects when game over OR Victory OR Paused */
         float running = game_over ? 0.0f : 1.0f;
-        if (victory) running = 0.f;
+        if (victory || paused) running = 0.f;
         for (auto go = game_objects.begin(); go != game_objects.end(); go++)
             (*go)->Update(dt * running);
         
@@ -455,6 +479,7 @@ public:
         
         if (score > hiScore) hiScore = score;
         if (show_victory_timer > 0.f) show_victory_timer -= (dt/game_speed);
+        button_bounce_timer = clamp(button_bounce_timer - (dt/game_speed), 0.f, 1.f);
         
         /* Spawn new entities */
         if (running > 0.f) {
@@ -509,11 +534,13 @@ public:
             
             if (car4_timer <= 0.f) {
                 car4_timer = 2.5f;
+                if (percentChance(40)) car4_timer = 4.f;
                 car_pool_4.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_4+6, -SLOW_CAR_SPEED);
             }
             if (car3_timer <= 0.f) {
                 car3_timer = 2.5f;
                 car_pool_3.FirstAvailable()->Init(-32, CAR_LANE_3+2, FAST_CAR_SPEED);
+                if (percentChance(25)) car_pool_3.FirstAvailable()->Init(-96, CAR_LANE_3+2, FAST_CAR_SPEED);
             }
             if (car2_timer <= 0.f) {
                 car2_timer = 2.f;
@@ -525,6 +552,7 @@ public:
             }
             if (car0_timer <= 0.f) {
                 car0_timer = 2.5f;
+                if (percentChance(33)) car0_timer = 1.25f;
                 car_pool_0.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_0+2, -MEDIUM_CAR_SPEED);
             }
             
@@ -566,6 +594,16 @@ public:
             }
         }
         
+        /* Levels */
+        {
+            int spr_w = level_sprite->getImageWidth() + 2;
+            int spr_h = level_sprite->getImageHeight();
+            int x = SCREEN_WIDTH - (spr_w*2);
+            for (int i = 0; i < level; i++) {
+                level_sprite->draw(x - (spr_w * i), SCREEN_HEIGHT - (spr_h*2));
+            }
+        }
+        
         /* Victory Time */
         if (show_victory_timer > 0.f) {
             snprintf(text, 256, "TIME %d", 60 - victory_time);
@@ -577,7 +615,14 @@ public:
             snprintf(text, 256, "*** G A M E   O V E R ***");
             engine->drawText(SCREEN_WIDTH / 2, SCREEN_HEIGHT/3, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red, c_black);
         }
-
+        
+        /* Paused */
+        if (paused) {
+            engine->drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, c_transp, false);
+            snprintf(text, 256, "Game Paused");
+            engine->drawText(SCREEN_WIDTH / 2, SCREEN_HEIGHT/2.5, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
+        }
+        
 		engine->swapBuffers();
 		engine->clearWindow();
 	}
@@ -615,17 +660,11 @@ public:
             show_victory_timer = 4.f;
             game_timer = GAME_TIMER;
             int x = player->horizontalPosition;
-            if (x >= 368) {
-                pocket4 = true;
-            } else if (x >= 272) {
-                pocket3 = true;
-            } else if (x >= 176) {
-                pocket2 = true;
-            } else if (x >= 80) {
-                pocket1 = true;
-            } else {
-                pocket0 = true;
-            }
+            if (x >= 368)      pocket4 = true;
+            else if (x >= 272) pocket3 = true;
+            else if (x >= 176) pocket2 = true;
+            else if (x >= 80)  pocket1 = true;
+            else               pocket0 = true;
             
             if (pocket0 && pocket1 && pocket2 && pocket3 && pocket4) {
                 /* Victory! */
@@ -642,11 +681,13 @@ public:
 		for (auto go = game_objects.begin(); go != game_objects.end(); go++)
 			(*go)->Destroy();
 
+        /* Destroy single sprites */
 		life_sprite->destroy();
         grass_purple->destroy();
         grass_top->destroy();
         victory_frog->destroy();
         victory_frog_wink->destroy();
+        level_sprite->destroy();
         
 		delete player;
         delete player_drown;
