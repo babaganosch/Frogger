@@ -25,6 +25,29 @@ bool AvancezLib::init(int width, int height)
         return false;
     }
     
+    
+    #if __APPLE__
+        // GL 3.2 Core + GLSL 150
+        // glsl_version = "#version 150";
+    /*
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+     */
+    #else
+        // GL 3.0 + GLSL 130
+        // glsl_version = "#version 130";
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    #endif
+    
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    
     SDL_GL_LoadLibrary(nullptr);
 
     //Create window
@@ -52,23 +75,29 @@ bool AvancezLib::init(int width, int height)
         return false;
     }
     
-    SDL_GL_CreateContext( window );
+    if(SDL_GL_CreateContext( window ) == nullptr)
+    {
+        fprintf(stderr, "%s: %s\n", "Failed to create OpenGL context", SDL_GetError());
+        return nullptr;
+    }
     if (glewInit() != GLEW_OK) {
             std::cerr << "GLEW init failed" << std::endl;
             abort();
     } else if (not GLEW_ARB_shading_language_100 or not GLEW_ARB_vertex_shader or not GLEW_ARB_fragment_shader or not GLEW_ARB_shader_objects) {
             std::cerr << "Shaders not available" << std::endl;
-            abort();
+            //abort();
     }
     
-    printf("Supported GLSL version is %s.\n", (char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("OpenGL %s, GLSL %s\n", (char *)glGetString(GL_VERSION), (char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     
     /* Load Shaders */
     shader = compileShaderProgram("/Users/larsa/Chalmers/TDA572/shaders/vertex.glsl", "/Users/larsa/Chalmers/TDA572/shaders/fragment.glsl");
     
+    
     texTarget = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, width, height);
-    SDL_UnlockTexture( texTarget );
+    if (SDL_SetRenderTarget(renderer, texTarget)) SDL_Log("Error!!");
+    //SDL_UnlockTexture( texTarget );
     
     glUseProgram(shader);
     glEnable( GL_TEXTURE_2D );
@@ -197,7 +226,6 @@ void AvancezLib::processInput()
 
 void AvancezLib::swapBuffers() {
     
-    SDL_SetRenderTarget(renderer, NULL);
     //SDL_RenderClear(renderer);
     
     glUseProgram(shader);
@@ -206,7 +234,7 @@ void AvancezLib::swapBuffers() {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GL_BindTexture error: %s\n",  SDL_GetError());
     glActiveTexture( GL_TEXTURE0 );
     glUniform1i( glGetUniformLocation( shader, "tex0" ), 0 );
-
+    
     glBegin(GL_QUADS);
     glVertex2f(-1.0, -1.0);
     glVertex2f(1.0,  -1.0);
@@ -217,7 +245,6 @@ void AvancezLib::swapBuffers() {
     SDL_GL_SwapWindow(window);
     glUseProgram(NULL);
     
-    if (SDL_SetRenderTarget(renderer, texTarget) != 0) SDL_Log("Error!!");
     //Update screen
     //SDL_RenderPresent(renderer);
 }
