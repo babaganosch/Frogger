@@ -1,54 +1,14 @@
 #include "avancezlib.h"
 
-bool CheckGLError()
-{
-    bool ret = false;
-    GLenum err;
-    while((err = glGetError()) != GL_NO_ERROR)
-    {
-        printf("GL Error: %d\n", err);
-        ret = true;
-    }
-
-    return ret;
-}
-
 bool AvancezLib::init(int width, int height)
 {
     SDL_Log("Initializing the engine...\n");
-    
-    if (SDL_SetHint(SDL_HINT_RENDER_DRIVER,"opengles2") == SDL_FALSE) SDL_Log("Set Hint Failed!");
     
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL failed the initialization: %s\n", SDL_GetError());
         return false;
     }
-    
-    
-    #if __APPLE__
-        // GL 3.2 Core + GLSL 150
-        // glsl_version = "#version 150";
-    /*
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-     */
-    #else
-        // GL 3.0 + GLSL 130
-        // glsl_version = "#version 130";
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    #endif
-    
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    
-    SDL_GL_LoadLibrary(nullptr);
 
     //Create window
     window = SDL_CreateWindow("Can it play FROGGER?", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
@@ -75,37 +35,6 @@ bool AvancezLib::init(int width, int height)
         return false;
     }
     
-    if(SDL_GL_CreateContext( window ) == nullptr)
-    {
-        fprintf(stderr, "%s: %s\n", "Failed to create OpenGL context", SDL_GetError());
-        return nullptr;
-    }
-    if (glewInit() != GLEW_OK) {
-            std::cerr << "GLEW init failed" << std::endl;
-            abort();
-    } else if (not GLEW_ARB_shading_language_100 or not GLEW_ARB_vertex_shader or not GLEW_ARB_fragment_shader or not GLEW_ARB_shader_objects) {
-            std::cerr << "Shaders not available" << std::endl;
-            //abort();
-    }
-    
-    printf("OpenGL %s, GLSL %s\n", (char *)glGetString(GL_VERSION), (char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-    
-    /* Load Shaders */
-    shader = compileShaderProgram("/Users/larsa/Chalmers/TDA572/shaders/vertex.glsl", "/Users/larsa/Chalmers/TDA572/shaders/fragment.glsl");
-    
-    
-    texTarget = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, width, height);
-    if (SDL_SetRenderTarget(renderer, texTarget)) SDL_Log("Error!!");
-    //SDL_UnlockTexture( texTarget );
-    
-    glUseProgram(shader);
-    glEnable( GL_TEXTURE_2D );
-    glActiveTexture( GL_TEXTURE0 );
-    SDL_GL_BindTexture(texTarget, NULL, NULL );
-    glUniform1i( glGetUniformLocation( shader, "tex0" ), 0 );
-    glUseProgram(0);
-
     // initialize the keys
     key.fire  = false;
     key.left  = false;
@@ -134,7 +63,7 @@ bool AvancezLib::init(int width, int height)
 void AvancezLib::destroy()
 {
     SDL_Log("Shutting down the engine\n");
-
+    SDL_SetRenderTarget(renderer, NULL);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
@@ -226,27 +155,54 @@ void AvancezLib::processInput()
 
 void AvancezLib::swapBuffers() {
     
-    //SDL_RenderClear(renderer);
+    #if SDL_BYTEORDER != SDL_BIG_ENDIAN
+        Uint32 rmask = 0xff000000;
+        Uint32 gmask = 0x00ff0000;
+        Uint32 bmask = 0x0000ff00;
+        Uint32 amask = 0x000000ff;
+    #else
+        Uint32 rmask = 0x000000ff;
+        Uint32 gmask = 0x0000ff00;
+        Uint32 bmask = 0x00ff0000;
+        Uint32 amask = 0xff000000;
+    #endif
     
-    glUseProgram(shader);
-
-    if (SDL_GL_BindTexture(texTarget, NULL, NULL))
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_GL_BindTexture error: %s\n",  SDL_GetError());
-    glActiveTexture( GL_TEXTURE0 );
-    glUniform1i( glGetUniformLocation( shader, "tex0" ), 0 );
+    SDL_Surface *sshot = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, sshot->pixels, sshot->pitch);
+    SDL_Surface *sshot2 = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, sshot->pixels, sshot->pitch);
     
-    glBegin(GL_QUADS);
-    glVertex2f(-1.0, -1.0);
-    glVertex2f(1.0,  -1.0);
-    glVertex2f(1.0,  1.0);
-    glVertex2f(-1.0, 1.0);
-    glEnd();
+    /* This is my Post processing */
+    for (int x = 0; x < width; x++) {  // 114688
+        for (int y = 0; y < height; y++) {
+            if (x <= width - 16) {
+                ((int*)sshot->pixels)[(y * width) + x] = (((int*)sshot2->pixels)[(y * width) + x + 8]) + 0x55000000;;
+            }
+            
+        }
+    }
     
-    SDL_GL_SwapWindow(window);
-    glUseProgram(NULL);
+    //Create texture from surface pixels
+    SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, sshot);
+    if (texture == NULL)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not do the screenshot stuff!! %s\n", SDL_GetError());
+    }
+    SDL_FreeSurface(sshot);
+    SDL_FreeSurface(sshot2);
     
-    //Update screen
-    //SDL_RenderPresent(renderer);
+    
+    SDL_Rect rect;
+    rect.x = 0;
+    rect.y = 0;
+    SDL_QueryTexture(texture, NULL, NULL, &(rect.w), &(rect.h));
+    
+    //Render texture to screen
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    
+    
+    //SDL_FreeSurface(surf);
+    SDL_RenderPresent(renderer);
 }
 
 void AvancezLib::clearWindow() {
@@ -338,78 +294,6 @@ void AvancezLib::drawText(int x, int y, const char * msg, H_ALIGN halign, V_ALIG
     SDL_FreeSurface(surf);
 }
 
-
-GLint AvancezLib::compileShader(const char* filename, GLenum type) {
-
-        FILE* file = fopen(filename, "rb");
-
-        if (file == NULL) {
-                std::cerr << "Cannot open shader " << filename << std::endl;
-                abort();
-        }
-
-        fseek(file, 0, SEEK_END);
-        const int size = (int)ftell(file);
-        rewind(file);
-
-        const GLchar* source = new GLchar[size+1];
-        fread(const_cast<char*>(source), sizeof(char), size, file);
-        const_cast<char&>(source[size]) = '\0';
-
-        const GLint shader = glCreateShader(type);
-
-        if (not shader) {
-                std::cerr << "Cannot create a shader of type " << shader << std::endl;
-                abort();
-        }
-
-        glShaderSource(shader, 1, &source, NULL);
-        glCompileShader(shader);
-
-        {
-                GLint compiled;
-                glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-                if (not compiled) {
-                        std::cerr << "Cannot compile shader " << filename << std::endl;
-                        GLsizei log_length = 0;
-                        GLchar message[1024];
-                        glGetShaderInfoLog(shader, 1024, &log_length, message);
-                        std::cerr << message << std::endl;
-                        abort();
-                }
-        }
-
-        return shader;
-
-}
-
-GLint AvancezLib::compileShaderProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename) {
-
-        const GLint program = glCreateProgram();
-
-        if (not program) {
-                std::cerr << "Cannot create a shader program" << std::endl;
-                abort();
-        }
-
-        glAttachShader(program, compileShader(vertexShaderFilename, GL_VERTEX_SHADER));
-        glAttachShader(program, compileShader(fragmentShaderFilename, GL_FRAGMENT_SHADER));
-
-        glLinkProgram(program);
-
-        {
-                GLint linked;
-                glGetProgramiv(program, GL_LINK_STATUS, &linked);
-                if (not linked) {
-                        std::cerr << "Cannot link shader program with shaders " << vertexShaderFilename << " and " << fragmentShaderFilename << std::endl;
-                        abort();
-                }
-        }
-
-        return program;
-
-}
-
 float AvancezLib::getElapsedTime()
 {
     return SDL_GetTicks() / 1000.f;
@@ -490,4 +374,3 @@ void Sprite::destroy()
 {
     SDL_DestroyTexture(texture);
 }
-

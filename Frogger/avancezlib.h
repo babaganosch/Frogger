@@ -4,8 +4,6 @@
 
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
-#include <GL/glew.h>
-#include <OpenGL/gl.h>
 #include <iostream>
 
 enum class H_ALIGN { LEFT, CENTER, RIGHT };
@@ -92,19 +90,12 @@ public:
     int getHeight() {
         return height;
     }
-
-    GLint compileShader(const char* filename, GLenum type);
-    GLint compileShaderProgram(const char* vertexShaderFilename, const char* fragmentShaderFilename);
     
 private:
     SDL_Window * window;
     SDL_Renderer * renderer;
-    GLint shader;
-    
-    SDL_Texture *texTarget;
-    GLint  gVertexPos2DLocation;
 
-    TTF_Font* font;
+    TTF_Font * font;
 
     KeyStatus key;
     int width, height;
