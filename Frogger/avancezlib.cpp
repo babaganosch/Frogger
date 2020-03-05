@@ -160,7 +160,7 @@ void AvancezLib::processInput()
         
         if (event.type == SDL_QUIT)
         {
-            key.esc = true;
+            quit();
         }
 
     }
@@ -202,6 +202,7 @@ void AvancezLib::postProcessing() {
             int yy2 = clamp(y+offsetY, 0, height);
             int xx1 = clamp(x-offsetX, 0, width-5);
             int xx2 = clamp(x+offsetX, 0, width-5);
+            
             ((int*)source->pixels)[(y * width) + x]  = (((int*)copy->pixels)[(y * width)   + x]   & 0x00FF0000);
             ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy1 * width) + xx1] & 0xFF000000);
             ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy2 * width) + xx2] & 0x0000FF00);
@@ -215,15 +216,11 @@ void AvancezLib::postProcessing() {
             ((int*)source->pixels)[(y * width) + x] += alpha;
             
             /* Noise (UGLY) */
-            if (percentChance(5)) {
-                int ALPHA = ((int*)source->pixels)[(y * width) + x] & 0x000000FF;
-                int RED = ((int*)source->pixels)[(y * width) + x] & 0xFF000000;
-                int GREEN = ((int*)source->pixels)[(y * width) + x] & 0x00FF0000;
-                int BLUE = ((int*)source->pixels)[(y * width) + x] & 0x0000FF00;
-                RED = clamp(RED+100, 0, 255);
-                GREEN = clamp(GREEN+100, 0, 255);
-                BLUE = clamp(BLUE+100, 0, 255);
-                ((int*)source->pixels)[(y * width) + x] = 0 << RED << GREEN << BLUE << ALPHA;
+            if (percentChance( .5 ) && x > 0 && x < width-1) {
+                ((int*)source->pixels)[(y * width) + x-1] += ((int*)source->pixels)[(y * width) + x-1] & 0xFFFFFF00;
+                ((int*)source->pixels)[(y * width) + x]   += ((int*)source->pixels)[(y * width) + x]   & 0xFFFFFF00;
+                ((int*)source->pixels)[(y * width) + x+1] += ((int*)source->pixels)[(y * width) + x+1] & 0xFFFFFF00;
+                ((int*)source->pixels)[(y * width) + x+2] += ((int*)source->pixels)[(y * width) + x+2] & 0xFFFFFF00;
             }
             
         }

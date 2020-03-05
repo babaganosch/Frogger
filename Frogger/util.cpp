@@ -14,8 +14,8 @@ double clamp(double x, double lower, double upper)
     return fmin(fmax(x, lower), upper);
 }
 
-bool percentChance(int percent) {
-    return (rand() % 100) < percent;
+bool percentChance(float percent) {
+    return ((rand() / (float)RAND_MAX)*100.0) < percent;
 }
 
 float random(float value) {

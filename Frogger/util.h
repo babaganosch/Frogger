@@ -13,7 +13,7 @@
 double clamp(double x, double lower, double upper);
 
 /* PercentChance: Returns true or false, based on a percentage */
-bool percentChance(int percent);
+bool percentChance(float percent);
 
 /* Random: Returns a value between 0 and the parameter */
 float random(float value);
