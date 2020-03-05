@@ -1,4 +1,5 @@
 #include "avancezlib.h"
+#include "util.h"
 
 bool AvancezLib::init(int width, int height)
 {
@@ -170,15 +171,19 @@ void AvancezLib::swapBuffers() {
     SDL_Surface *sshot = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
     SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, sshot->pixels, sshot->pitch);
     SDL_Surface *sshot2 = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
-    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, sshot->pixels, sshot->pitch);
+    SDL_BlitSurface(sshot,NULL,sshot2,NULL);
     
+    float center = width / 2;
     /* This is my Post processing */
     for (int x = 0; x < width; x++) {  // 114688
         for (int y = 0; y < height; y++) {
-            if (x <= width - 16) {
-                ((int*)sshot->pixels)[(y * width) + x] = (((int*)sshot2->pixels)[(y * width) + x + 8]) + 0x55000000;;
-            }
-            
+            int offset = 4 * ((x - center) / center);
+            int xx1 = clamp(x-offset, 0, width);
+            int xx2 = clamp(x+offset, 0, width);
+            //if (x >= 16)
+            ((int*)sshot->pixels)[(y * width) + x] = (((int*)sshot2->pixels)[(y * width) + x]    & 0x00FF0055);
+            ((int*)sshot->pixels)[(y * width) + x] += (((int*)sshot2->pixels)[(y * width) + xx1] & 0xFF000055);
+            ((int*)sshot->pixels)[(y * width) + x] += (((int*)sshot2->pixels)[(y * width) + xx2] & 0x0000FF55);
         }
     }
     
