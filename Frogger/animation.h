@@ -25,7 +25,6 @@ public:
         /* Restart the animation */
         RenderComponent* rendererComponent = GetComponent<RenderComponent*>();
         rendererComponent->SetImageIndex(0);
-        bbox_right = 0; bbox_top = 0; bbox_left = 0; bbox_bot = 0;
     }
     
     virtual void Update(float dt)

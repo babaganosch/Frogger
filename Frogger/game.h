@@ -47,6 +47,9 @@ class Game : public GameObject
     ObjectPool<Car>    car_pool_2;
     ObjectPool<Car>    car_pool_3;
     ObjectPool<Car>    car_pool_4;
+    
+    /* Enemy pools */
+    ObjectPool<Snake>  snake_pool;
 
     /* Global */
 	unsigned int score;
@@ -106,6 +109,10 @@ public:
         CollideComponent * car4_collider = new CollideComponent();
         car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4, HIT);
         
+        /* Enemy collider */
+        CollideComponent * snake_collider = new CollideComponent();
+        snake_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &snake_pool, HIT);
+        
         /* Goal colliders */
         CollideComponent * pocket_collider = new CollideComponent();
         pocket_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &goal_pool, POCKET_REACHED);
@@ -132,6 +139,7 @@ public:
         player->AddComponent(car2_collider);
         player->AddComponent(car3_collider);
         player->AddComponent(car4_collider);
+        player->AddComponent(snake_collider);
         player->AddComponent(pocket_collider);
         
         /* Player death animation */
@@ -315,6 +323,24 @@ public:
             (*scr)->AddReceiver(this);
             game_objects.insert(*scr);
         }
+        
+        snake_pool.Create(4);
+        for (auto snake = snake_pool.pool.begin(); snake != snake_pool.pool.end(); snake++)
+        {
+            SnakeBehaviourComponent * snake_behaviour = new SnakeBehaviourComponent();
+            snake_behaviour->Create(engine, *snake, &game_objects);
+            RenderComponent * snake_renderer = new RenderComponent();
+            snake_renderer->Create(engine, *snake, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/snake/snake0.bmp", 4.f);
+            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
+            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake2.bmp");
+            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
+            (*snake)->Create();
+            (*snake)->AddComponent(snake_behaviour);
+            (*snake)->AddComponent(snake_renderer);
+            (*snake)->AddReceiver(this);
+            game_objects.insert(*snake);
+        }
+        
         
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
         grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
@@ -560,6 +586,10 @@ public:
                 car0_timer = 2.5f;
                 if (percentChance(33)) car0_timer = 1.25f;
                 car_pool_0.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_0+2, -MEDIUM_CAR_SPEED);
+                
+                if (percentChance(10)) {
+                    snake_pool.FirstAvailable()->Init(-64, GRASS_GREEN_ROW_TOP, MEDIUM_CAR_SPEED);
+                }
             }
             
         }

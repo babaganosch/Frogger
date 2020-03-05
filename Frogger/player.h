@@ -128,7 +128,7 @@ public:
         /* Make sure the frog faces upwards */
         RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
         rendererComponent->SetImageIndex(IDLE_VERTICAL);
-        rendererComponent->SetImageFlip(SDL_FLIP_NONE);
+        go->image_flip = SDL_FLIP_NONE;
 	}
 
 	virtual void Update(float dt)
@@ -175,25 +175,25 @@ public:
             switch (moving) {
                 case DIRECTION::RIGHT:
                     rendererComponent->SetImageIndex(MOVING_HORIZONTAL);
-                    rendererComponent->SetImageFlip(SDL_FLIP_HORIZONTAL);
+                    go->image_flip = SDL_FLIP_HORIZONTAL;
                     go->horizontalPosition += dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::LEFT:
                     rendererComponent->SetImageIndex(MOVING_HORIZONTAL);
-                    rendererComponent->SetImageFlip(SDL_FLIP_NONE);
+                    go->image_flip = SDL_FLIP_NONE;
                     go->horizontalPosition -= dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::UP:
                     rendererComponent->SetImageIndex(MOVING_VERTICAL);
-                    rendererComponent->SetImageFlip(SDL_FLIP_NONE);
+                    go->image_flip = SDL_FLIP_NONE;
                     go->verticalPosition  -= dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::DOWN:
                     rendererComponent->SetImageIndex(MOVING_VERTICAL);
-                    rendererComponent->SetImageFlip(SDL_FLIP_VERTICAL);
+                    go->image_flip = SDL_FLIP_VERTICAL;
                     go->verticalPosition  += dist;
                     move_distance -= dist;
                     break;

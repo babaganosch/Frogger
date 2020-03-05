@@ -18,7 +18,7 @@ void GameObject::AddComponent(Component * component)
 void GameObject::Init()
 {
 	//SDL_Log("GameObject::Init");
-
+    image_flip = SDL_FLIP_NONE;
 	for (auto it = components.begin(); it != components.end(); it++)
 		(*it)->Init();
 

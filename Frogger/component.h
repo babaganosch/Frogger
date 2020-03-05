@@ -31,7 +31,6 @@ public:
 class RenderComponent : public Component
 {
     std::vector<Sprite*> sprites;
-    SDL_RendererFlip image_flip;
     unsigned int image_number;
     double image_index;
     double animation_speed;
@@ -45,7 +44,6 @@ public:
     void AddSprite(const char * sprite_name);
     void SetImageIndex(const unsigned int index);
     void SetImageSpeed(const double speed);
-    void SetImageFlip(SDL_RendererFlip flip);
     unsigned int GetImageIndex() {return image_index;};
 };
 

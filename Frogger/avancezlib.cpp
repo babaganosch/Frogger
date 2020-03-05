@@ -192,6 +192,8 @@ void AvancezLib::postProcessing() {
     SDL_RenderClear(renderer);
     float centerX = width/2, centerY = height/2;
     /* This is my Post processing */
+    int warp_y0 = irandom(height-1);
+    int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             
@@ -216,11 +218,25 @@ void AvancezLib::postProcessing() {
             ((int*)source->pixels)[(y * width) + x] += alpha;
             
             /* Noise (UGLY) */
-            if (percentChance( .5 ) && x > 0 && x < width-1) {
-                ((int*)source->pixels)[(y * width) + x-1] += ((int*)source->pixels)[(y * width) + x-1] & 0xFFFFFF00;
-                ((int*)source->pixels)[(y * width) + x]   += ((int*)source->pixels)[(y * width) + x]   & 0xFFFFFF00;
-                ((int*)source->pixels)[(y * width) + x+1] += ((int*)source->pixels)[(y * width) + x+1] & 0xFFFFFF00;
-                ((int*)source->pixels)[(y * width) + x+2] += ((int*)source->pixels)[(y * width) + x+2] & 0xFFFFFF00;
+            if (percentChance( .75 ) && x > 1 && x < width-1) {
+                
+                int noise = 0x20202000;
+                if (percentChance(33)) {
+                    noise = 0x10101000;
+                } else if (percentChance(50)) {
+                    noise = 0x25252500;
+                }
+                
+                ((int*)source->pixels)[(y * width) + x-2] = ((int*)source->pixels)[(y * width) + x-2] | noise;
+                ((int*)source->pixels)[(y * width) + x-1] = ((int*)source->pixels)[(y * width) + x-1] | noise;
+                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x]   | noise;
+                ((int*)source->pixels)[(y * width) + x+1] = ((int*)source->pixels)[(y * width) + x+1] | noise;
+                ((int*)source->pixels)[(y * width) + x+2] = ((int*)source->pixels)[(y * width) + x+2] | noise;
+            }
+            
+            /* Screen Tearing */
+            if (y == warp_y0 || y == warp_y1) {
+                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width)   + x + 4];
             }
             
         }
@@ -380,14 +396,7 @@ unsigned int Sprite::getImageHeight() {
 
 void Sprite::draw(int x, int y)
 {
-    SDL_Rect rect;
-
-    rect.x = x;
-    rect.y = y;
-    SDL_QueryTexture(texture, NULL, NULL, &(rect.w), &(rect.h));
-    
-    //Render texture to screen
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
+    draw(x, y, SDL_FLIP_NONE);
 }
 
 void Sprite::draw(int x, int y, SDL_RendererFlip flip)

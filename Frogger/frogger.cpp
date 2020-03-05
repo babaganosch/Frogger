@@ -53,6 +53,7 @@ float game_speed = 1.f;		// speed of the game; it is increased each time all the
 #include "car.h"
 #include "pocket.h"
 #include "animation.h"
+#include "snake.h"
 
 #include "game.h"
 

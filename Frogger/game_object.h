@@ -2,6 +2,7 @@
 
 // GameObject represents objects which moves are drawn
 #include <vector>
+#include <SDL2/SDL.h>
 
 enum Message { ON_GROUND, HIT, PLAYER_DROWN, PLAYER_ROADKILL, GAME_OVER, LEVEL_WIN, NO_MSG, QUIT, ANIMATION_END, VERTICAL_ADVANCEMENT, POCKET_REACHED
 };
@@ -20,7 +21,8 @@ public:
 	double horizontalPosition;
 	double verticalPosition;
 	bool   enabled;
-
+    SDL_RendererFlip image_flip;
+    
 	virtual ~GameObject();
     
 	virtual void Create();

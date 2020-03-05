@@ -18,10 +18,9 @@ void RenderComponent::Create(AvancezLib * engine, GameObject * go, std::set<Game
     image_number   = 1;
     image_index    = 0.f;
     animation_speed = speed;
-    image_flip = SDL_FLIP_NONE;
     /* Setup standard BBOX */
     go->width  = sprite->getImageWidth();
-    go->height = sprite->getImageHeight();;
+    go->height = sprite->getImageHeight();
     go->bbox_left  = go->bbox_top = 0;
     go->bbox_right = go->width;
     go->bbox_bot   = go->height;
@@ -40,10 +39,6 @@ void RenderComponent::SetImageSpeed(const double speed) {
     animation_speed = speed;
 }
 
-void RenderComponent::SetImageFlip(SDL_RendererFlip flip) {
-    image_flip = flip;
-}
-
 void RenderComponent::Update(float dt)
 {
 	if (!go->enabled)
@@ -52,12 +47,12 @@ void RenderComponent::Update(float dt)
     if (sprites.at(floor(image_index))) {
         #ifdef SPRITE_DEBUG
         /* DEBUG: Draw size of sprite */
-        engine->drawRect(go->horizontalPosition, go->verticalPosition, go->horizontalPosition+go->width, go->verticalPosition+go->height, {0, 255, 255}, false);
+        engine->drawRect(go->horizontalPosition, go->verticalPosition, go->horizontalPosition+go->width, go->verticalPosition+go->height, {0, 255, 255, 128}, false);
         #endif
-        sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), image_flip);
+        sprites.at(floor(image_index))->draw(int(go->horizontalPosition), int(go->verticalPosition), go->image_flip);
         #ifdef SPRITE_DEBUG
         /* DEBUG: Draw bounding box */
-        engine->drawRect(go->horizontalPosition+go->bbox_left, go->verticalPosition+go->bbox_top, go->horizontalPosition+go->bbox_right, go->verticalPosition+go->bbox_bot, {255, 0, 0}, false);
+        engine->drawRect(go->horizontalPosition+go->bbox_left, go->verticalPosition+go->bbox_top, go->horizontalPosition+go->bbox_right, go->verticalPosition+go->bbox_bot, {255, 0, 0, 128}, false);
         #endif
     }
     
