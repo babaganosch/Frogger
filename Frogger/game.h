@@ -73,6 +73,8 @@ class Game : public GameObject
     float        car2_timer;
     float        car3_timer;
     float        car4_timer;
+    
+    float        snake_timer;
 
 public:
 
@@ -324,13 +326,13 @@ public:
             game_objects.insert(*scr);
         }
         
-        snake_pool.Create(4);
+        snake_pool.Create(2);
         for (auto snake = snake_pool.pool.begin(); snake != snake_pool.pool.end(); snake++)
         {
             SnakeBehaviourComponent * snake_behaviour = new SnakeBehaviourComponent();
             snake_behaviour->Create(engine, *snake, &game_objects);
             RenderComponent * snake_renderer = new RenderComponent();
-            snake_renderer->Create(engine, *snake, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/snake/snake0.bmp", 4.f);
+            snake_renderer->Create(engine, *snake, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/snake/snake0.bmp", 7.f);
             snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
             snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake2.bmp");
             snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
@@ -377,6 +379,7 @@ public:
         car2_timer = 0.f;
         car1_timer = 0.f;
         car0_timer = 0.f;
+        snake_timer = 3.f;
         
         /* Pockets */
         pocket0 = false;
@@ -499,6 +502,12 @@ public:
         for (auto go = game_objects.begin(); go != game_objects.end(); go++)
             (*go)->Update(dt * running);
         
+        /* Render the snakes above logs and such */
+        for (auto snake = snake_pool.pool.begin(); snake != snake_pool.pool.end(); snake++)
+        {
+            if((*snake)->enabled) (*snake)->Update(0);
+        }
+        
         /* Make sure player is rendered last */
         player->Update(0);
         player_drown->Update(dt);
@@ -542,6 +551,14 @@ public:
                 /* SPAWN LARGE LOG */
                 log_timer_mid = 3.f;
                 log_pool_large.FirstAvailable()->Init(-174, LOG_ROW_1+6, FAST_PLATFORM_SPEED);
+                if (percentChance(10)) {
+                    /* SPAWN SNAKE ON LOG */
+                    Snake* snake = snake_pool.FirstAvailable();
+                    if (snake != NULL) {
+                        if (percentChance(50)) snake->Init(-200+random(64), LOG_ROW_1, (SNAKE_SPEED / 2) + FAST_PLATFORM_SPEED, SDL_FLIP_HORIZONTAL);
+                        else  snake->Init(-58, LOG_ROW_1, -(SNAKE_SPEED / 2) + FAST_PLATFORM_SPEED, SDL_FLIP_NONE);
+                    }
+                }
             }
             if (log_timer_bot <= 0.f) {
                 /* SPAWN SMALL LOG */
@@ -586,12 +603,21 @@ public:
                 car0_timer = 2.5f;
                 if (percentChance(33)) car0_timer = 1.25f;
                 car_pool_0.FirstAvailable()->Init(SCREEN_WIDTH, CAR_LANE_0+2, -MEDIUM_CAR_SPEED);
-                
-                if (percentChance(10)) {
-                    snake_pool.FirstAvailable()->Init(-64, GRASS_GREEN_ROW_TOP, MEDIUM_CAR_SPEED);
-                }
             }
             
+            /* Enemies */
+            snake_timer -= dt;
+            
+            if (snake_timer <= 0.f) {
+                snake_timer = 15.f;
+                if (percentChance(20)) {
+                    Snake* snake = snake_pool.FirstAvailable();
+                    if (snake != NULL) {
+                        if (percentChance(50)) snake->Init(-64, GRASS_GREEN_ROW_TOP, SNAKE_SPEED, SDL_FLIP_HORIZONTAL);
+                        else snake->Init(SCREEN_WIDTH, GRASS_GREEN_ROW_TOP, -SNAKE_SPEED, SDL_FLIP_NONE);
+                    }
+                }
+            }
         }
 	}
     
@@ -670,6 +696,7 @@ public:
 		{
             SDL_Log("Game Over!");
             game_over = true;
+            player->enabled = false;
 		}
         
         else if (m == PLAYER_DROWN)

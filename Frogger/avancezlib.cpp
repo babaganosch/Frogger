@@ -187,7 +187,7 @@ void AvancezLib::postProcessing() {
     
     SDL_Surface *source = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
     SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, source->pixels, source->pitch);
-    SDL_Surface *copy = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    SDL_Surface *copy   = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
     SDL_BlitSurface(source,NULL,copy,NULL);
     SDL_RenderClear(renderer);
     float centerX = width/2, centerY = height/2;
@@ -220,6 +220,7 @@ void AvancezLib::postProcessing() {
             /* Noise (UGLY) */
             if (percentChance( .75 ) && x > 1 && x < width-1) {
                 
+                /* Amount of noise */
                 int noise = 0x20202000;
                 if (percentChance(33)) {
                     noise = 0x10101000;
@@ -227,6 +228,7 @@ void AvancezLib::postProcessing() {
                     noise = 0x25252500;
                 }
                 
+                /* Warp */
                 ((int*)source->pixels)[(y * width) + x-2] = ((int*)source->pixels)[(y * width) + x-2] | noise;
                 ((int*)source->pixels)[(y * width) + x-1] = ((int*)source->pixels)[(y * width) + x-1] | noise;
                 ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x]   | noise;
@@ -236,7 +238,7 @@ void AvancezLib::postProcessing() {
             
             /* Screen Tearing */
             if (y == warp_y0 || y == warp_y1) {
-                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width)   + x + 4];
+                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
             }
             
         }

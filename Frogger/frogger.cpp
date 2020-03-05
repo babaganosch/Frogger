@@ -38,6 +38,8 @@ const float SLOW_CAR_SPEED           = 60.f;
 const float MEDIUM_CAR_SPEED         = 90.f;
 const float FAST_CAR_SPEED           = 200.f;
 
+const float SNAKE_SPEED              = 40.f;
+
 
 
 float game_speed = 1.f;		// speed of the game; it is increased each time all the aliens are hit
