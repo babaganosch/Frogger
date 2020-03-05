@@ -423,6 +423,12 @@ public:
         if (keys.pause) {
             TogglePause();
         }
+        if (keys.opt0) {
+            if (button_bounce_timer <= 0.f) {
+                engine->togglePostProcessing();
+                button_bounce_timer = .25f;
+            }
+        }
         
         /* Draw the BG */
         {
@@ -565,13 +571,13 @@ public:
         
         /* Score */
         snprintf(text, 256, "HI-SCORE");
-        engine->drawText(SCREEN_WIDTH / 2, 0, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
+        engine->drawText(SCREEN_WIDTH / 2, 1, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
         snprintf(text, 256, "%05d", hiScore);
-        engine->drawText(SCREEN_WIDTH / 2, 16, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
+        engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
-        engine->drawText(SCREEN_WIDTH / 4, 0, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);
+        engine->drawText(SCREEN_WIDTH / 4, 1, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);
         snprintf(text, 256, "%05d", score);
-        engine->drawText(SCREEN_WIDTH / 4, 16, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
+        engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
         
         /* Time */
         {
@@ -623,6 +629,7 @@ public:
             engine->drawText(SCREEN_WIDTH / 2, SCREEN_HEIGHT/2.5, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         }
         
+        engine->postProcessing();
 		engine->swapBuffers();
 		engine->clearWindow();
 	}

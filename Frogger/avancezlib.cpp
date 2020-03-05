@@ -44,12 +44,18 @@ bool AvancezLib::init(int width, int height)
     key.down  = false;
     key.esc   = false;
     key.pause = false;
+    key.opt0  = false;
+    key.opt1  = false;
+    key.opt2  = false;
     key.restart = false;
+    
+    // Enable Post Processing
+    enable_post_processing = true;
 
-    //Initialize renderer color
+    // Initialize renderer color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
-    //Clear screen
+    // Clear screen
     SDL_RenderClear(renderer);
 
     this->width = width;
@@ -115,6 +121,9 @@ void AvancezLib::processInput()
             case SDLK_p:
                 key.pause = true;
                 break;
+            case SDLK_o:
+                key.opt0 = true;
+                break;
             }
         }
 
@@ -143,6 +152,9 @@ void AvancezLib::processInput()
             case SDLK_p:
                 key.pause = false;
                 break;
+            case SDLK_o:
+                key.opt0 = false;
+                break;
             }
         }
         
@@ -154,9 +166,14 @@ void AvancezLib::processInput()
     }
 }
 
-void AvancezLib::swapBuffers() {
+void AvancezLib::togglePostProcessing() {
+    enable_post_processing = !enable_post_processing;
+}
+
+void AvancezLib::postProcessing() {
+    if (!enable_post_processing) return;
     
-    #if SDL_BYTEORDER != SDL_BIG_ENDIAN
+    #if SDL_BYTEORDER == SDL_LIL_ENDIAN
         Uint32 rmask = 0xff000000;
         Uint32 gmask = 0x00ff0000;
         Uint32 bmask = 0x0000ff00;
@@ -168,50 +185,76 @@ void AvancezLib::swapBuffers() {
         Uint32 amask = 0xff000000;
     #endif
     
-    SDL_Surface *sshot = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
-    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, sshot->pixels, sshot->pitch);
-    SDL_Surface *sshot2 = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
-    SDL_BlitSurface(sshot,NULL,sshot2,NULL);
-    
-    float center = width / 2;
+    SDL_Surface *source = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGBA8888, source->pixels, source->pitch);
+    SDL_Surface *copy = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
+    SDL_BlitSurface(source,NULL,copy,NULL);
+    SDL_RenderClear(renderer);
+    float centerX = width/2, centerY = height/2;
     /* This is my Post processing */
-    for (int x = 0; x < width; x++) {  // 114688
+    for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            int offset = 4 * ((x - center) / center);
-            int xx1 = clamp(x-offset, 0, width);
-            int xx2 = clamp(x+offset, 0, width);
-            //if (x >= 16)
-            ((int*)sshot->pixels)[(y * width) + x] = (((int*)sshot2->pixels)[(y * width) + x]    & 0x00FF0055);
-            ((int*)sshot->pixels)[(y * width) + x] += (((int*)sshot2->pixels)[(y * width) + xx1] & 0xFF000055);
-            ((int*)sshot->pixels)[(y * width) + x] += (((int*)sshot2->pixels)[(y * width) + xx2] & 0x0000FF55);
+            
+            /* Chromatic Aberration */
+            int offsetX = 5 * ((x - centerX) / centerX);
+            int offsetY = 2 * ((y - centerY) / centerY);
+            int yy1 = clamp(y-offsetY, 0, height);
+            int yy2 = clamp(y+offsetY, 0, height);
+            int xx1 = clamp(x-offsetX, 0, width-5);
+            int xx2 = clamp(x+offsetX, 0, width-5);
+            ((int*)source->pixels)[(y * width) + x]  = (((int*)copy->pixels)[(y * width)   + x]   & 0x00FF0000);
+            ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy1 * width) + xx1] & 0xFF000000);
+            ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy2 * width) + xx2] & 0x0000FF00);
+            
+            /* Vignette */
+            float vig = x * y * ( width - x ) * ( height - y ) * 8.0;
+            vig = pow(vig, 0.25);
+            int alpha = (int)clamp(vig, 0, 255);
+            if (alpha == 0) alpha = 255;
+            if (x == 0 || x == width || y == 0 || y == height) alpha = 0;
+            ((int*)source->pixels)[(y * width) + x] += alpha;
+            
+            /* Noise (UGLY) */
+            if (percentChance(5)) {
+                int ALPHA = ((int*)source->pixels)[(y * width) + x] & 0x000000FF;
+                int RED = ((int*)source->pixels)[(y * width) + x] & 0xFF000000;
+                int GREEN = ((int*)source->pixels)[(y * width) + x] & 0x00FF0000;
+                int BLUE = ((int*)source->pixels)[(y * width) + x] & 0x0000FF00;
+                RED = clamp(RED+100, 0, 255);
+                GREEN = clamp(GREEN+100, 0, 255);
+                BLUE = clamp(BLUE+100, 0, 255);
+                ((int*)source->pixels)[(y * width) + x] = 0 << RED << GREEN << BLUE << ALPHA;
+            }
+            
         }
     }
     
     //Create texture from surface pixels
-    SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, sshot);
+    
+    SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, source);
     if (texture == NULL)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not do the screenshot stuff!! %s\n", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create a texture from the surface %s\n", SDL_GetError());
     }
-    SDL_FreeSurface(sshot);
-    SDL_FreeSurface(sshot2);
     
-    
-    SDL_Rect rect;
-    rect.x = 0;
-    rect.y = 0;
+    SDL_Rect rect; rect.x = 0; rect.y = 0;
     SDL_QueryTexture(texture, NULL, NULL, &(rect.w), &(rect.h));
     
-    //Render texture to screen
+    // Render texture to screen
     SDL_RenderCopy(renderer, texture, NULL, &rect);
     
-    
-    //SDL_FreeSurface(surf);
+    // Free memory
+    SDL_FreeSurface(source);
+    SDL_FreeSurface(copy);
+}
+
+void AvancezLib::swapBuffers() {
+    // Update screen
     SDL_RenderPresent(renderer);
 }
 
 void AvancezLib::clearWindow() {
-    //Clear screen
+    // Clear screen
     SDL_RenderClear(renderer);
 }
 
@@ -313,6 +356,9 @@ void AvancezLib::getKeyStatus(KeyStatus & keys)
     keys.down = key.down;
     keys.esc = key.esc;
     keys.pause = key.pause;
+    keys.opt0 = key.opt0;
+    keys.opt1 = key.opt1;
+    keys.opt2 = key.opt2;
     keys.restart = key.restart;
 }
 

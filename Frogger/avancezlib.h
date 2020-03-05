@@ -53,7 +53,10 @@ public:
     void swapBuffers();
 
     void clearWindow();
-
+    
+    void postProcessing();
+    void togglePostProcessing();
+    
     // Create a sprite given a string.
     // All sprites are 32*32 pixels.
     Sprite* createSprite(const char* name);
@@ -77,6 +80,9 @@ public:
         bool down;  // down arrow
         bool restart; // r-key
         bool pause;   // p-key
+        bool opt0;    // option0
+        bool opt1;    // option1
+        bool opt2;    // option2
         bool esc;     // escape button
     };
 
@@ -92,12 +98,12 @@ public:
     }
     
 private:
-    SDL_Window * window;
+    SDL_Window   * window;
     SDL_Renderer * renderer;
-
-    TTF_Font * font;
+    TTF_Font     * font;
 
     KeyStatus key;
     int width, height;
+    bool enable_post_processing;
 };
 
