@@ -15,6 +15,7 @@ class Game : public GameObject
 	
 	AvancezLib* engine;
 	Player * player;
+    Grudge * grudge;
     PlayerDeath * player_drown;
     PlayerDeath * player_roadkill;
 	Sprite * life_sprite;
@@ -67,12 +68,14 @@ class Game : public GameObject
     Mix_Chunk * s_game_over;
     Mix_Chunk * s_extra_frog;
     Mix_Chunk * s_goal;
+    Mix_Chunk * s_glitched;
 
     /* Global */
 	unsigned int score;
     unsigned int hiScore;
     bool         game_over;
     bool         paused;
+    bool         glitched;
     float        show_victory_timer;
     float        button_bounce_timer;
     int          level;
@@ -100,7 +103,20 @@ public:
 		SDL_Log("Game::Create");
 
 		this->engine = engine;
-
+        
+        // Grudge
+        grudge = new Grudge();
+        GrudgeBehaviourComponent * grudge_behaviour = new GrudgeBehaviourComponent();
+        grudge_behaviour->Create(engine, grudge, &game_objects);
+        RenderComponent * grudge_render = new RenderComponent();
+        grudge_render->Create(engine, grudge, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/grudge0.bmp", 4.f);
+        grudge_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/misc/grudge1.bmp");
+        grudge->Create();
+        grudge->AddComponent(grudge_behaviour);
+        grudge->AddComponent(grudge_render);
+        grudge->AddReceiver(this);
+        game_objects.insert(grudge);
+        
         // Player
 		player = new Player();
 		PlayerBehaviourComponent * player_behaviour = new PlayerBehaviourComponent();
@@ -377,6 +393,7 @@ public:
         s_game_over     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/game_over.wav" );
         s_extra_frog    = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/extra_frog.wav" );
         s_goal          = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/score.wav" );
+        s_glitched      = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/glitched.wav" );
         m_music_menu    = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme_menu.wav" );
         m_music_0       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme0.wav" );
         m_music_1       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme1.wav" );
@@ -388,11 +405,15 @@ public:
 	virtual void Init()
 	{
 		player->Init();
+        int grudge_start_x = percentChance(50) ? SCREEN_WIDTH : -32;
+        grudge->Init(grudge_start_x, irandom(SCREEN_HEIGHT));
+        grudge->enabled = false;
 
         /* Globals */
 		enabled     = true;
         game_over   = false;
         paused      = false;
+        glitched    = false;
         score       = 0;
         hiScore     = 0;
         level       = 0;
@@ -571,7 +592,8 @@ public:
             if((*snake)->enabled) (*snake)->Update(0);
         }
         
-        /* Make sure player is rendered last */
+        /* Make sure player, grudge and animations are rendered last */
+        grudge->Update(0);
         player->Update(0);
         player_drown->Update(dt);
         player_roadkill->Update(dt);
@@ -595,8 +617,22 @@ public:
             engine->playSound( s_extra_frog );
         }
         
-        /* Spawn new entities */
+        /* Game Mechanics */
         if (running > 0.f) {
+            /* GLITCH */
+            bool was_glitched = glitched;
+            glitched = engine->getGlitch();
+            if (glitched && !was_glitched) {
+                engine->pauseMixer();
+                engine->playSound( s_glitched );
+                grudge->enabled = true;
+            } else if (was_glitched && !glitched) {
+                engine->resumeMixer();
+                grudge->enabled = false;
+            }
+            if (glitched) grudge->SetTarget(player->horizontalPosition, player->verticalPosition);
+            
+            
             if (game_timer <= 0.f) {
                 if (!game_over) {
                     engine->stopMusic();
@@ -705,8 +741,7 @@ public:
 	virtual void Draw()
 	{
         char text[256];
-        bool glitch = engine->getGlitch();
-        int draw_highscore = glitch ? 6660 : hiScore;
+        int draw_highscore = glitched ? 6660 : hiScore;
         /* Score */
         snprintf(text, 256, "HI-SCORE");
         engine->drawText(SCREEN_WIDTH / 2, 1, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
@@ -714,8 +749,16 @@ public:
         engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
         engine->drawText(SCREEN_WIDTH / 4, 1, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);
-        snprintf(text, 256, "%05d", score);
-        engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
+        if (!glitched) {
+            snprintf(text, 256, "%05d", score);
+            engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
+        } else {
+            snprintf(text, 256, "xxxxxxxx");
+            engine->drawText((SCREEN_WIDTH / 3)*2, 64, text, H_ALIGN::LEFT, V_ALIGN::TOP, c_white);
+            snprintf(text, 256, "natas");
+            engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
+        }
+        
         
         /* Time */
         {
@@ -862,9 +905,11 @@ public:
         Mix_FreeChunk( s_game_over );
         Mix_FreeChunk( s_extra_frog );
         Mix_FreeChunk( s_goal );
+        Mix_FreeChunk( s_glitched );
         
         Mix_CloseAudio();
         
+        delete grudge;
 		delete player;
         delete player_drown;
         delete player_roadkill;

@@ -204,11 +204,15 @@ void AvancezLib::postProcessing() {
     SDL_RenderClear(renderer);
     float centerX = width/2, centerY = height/2;
     /* This is my Post processing */
-    const int glitch_intervall = 150; /* in ms */
-    int warp_y0 = irandom(height-1);
-    int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
-    int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 5000;
-    int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 5000;
+    const int glitch_intervall = 250; /* in ms */
+    const int warp_y0 = irandom(height-1);
+    const int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
+    const int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 2000;
+    const int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 2000;
+    const int glitch_y0 = 18;
+    const int glitch_y1 = (height / 3);
+    const int glitch_y2 = (height / 4)*3;
+    const int glitch_y3 = glitch_y2 + 16;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             
@@ -256,10 +260,19 @@ void AvancezLib::postProcessing() {
                 ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
             }
             
-            /* Color error */
-            if (warp_c0 <= 10) {
+            /* Glitch */
+            if (warp_c0 <= 10 || (warp_c0 >= glitch_intervall && warp_c0 <= glitch_intervall+10)) {
                 ((int*)source->pixels)[(y * width) + x] += 0x40404000;
             } else if (warp_c1 <= glitch_intervall) {
+                if (y >= glitch_y0 && y <= glitch_y0+3) {
+                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
+                } else if (y >= glitch_y1 && y <= glitch_y1+3) {
+                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 4];
+                } else if (y >= glitch_y2 && y <= glitch_y2+4) {
+                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 7];
+                } else if (y >= glitch_y3 && y <= glitch_y3+5) {
+                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 5];
+                }
                 ((int*)source->pixels)[(y * width) + x] += 0x00000100;
             }
             
