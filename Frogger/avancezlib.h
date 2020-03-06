@@ -4,6 +4,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <iostream>
 
 enum class H_ALIGN { LEFT, CENTER, RIGHT };
@@ -96,6 +97,12 @@ public:
     int getHeight() {
         return height;
     }
+    
+    void playSound(Mix_Chunk * sound);
+    void playMusic(Mix_Music * music);
+    void stopMusic();
+    void pauseMixer();
+    void resumeMixer();
     
 private:
     SDL_Window   * window;

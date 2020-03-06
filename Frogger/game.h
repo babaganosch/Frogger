@@ -26,6 +26,7 @@ class Game : public GameObject
     bool pocket0, pocket1, pocket2, pocket3, pocket4;
     bool victory;
     int  victory_time;
+    int  extra_frog_counter;
     float wink_timer;
     Sprite * victory_frog;
     Sprite * victory_frog_wink;
@@ -50,6 +51,22 @@ class Game : public GameObject
     
     /* Enemy pools */
     ObjectPool<Snake>  snake_pool;
+    
+    /* Sounds */
+    Mix_Music * m_music_menu;
+    Mix_Music * m_music_0;
+    Mix_Music * m_music_1;
+    Mix_Music * m_music_2;
+    Mix_Music * m_music_3;
+    Mix_Music * m_music_4;
+    Mix_Chunk * s_frog_jump;
+    Mix_Chunk * s_frog_drown;
+    Mix_Chunk * s_frog_roadkill;
+    Mix_Chunk * s_time_low;
+    Mix_Chunk * s_level_win;
+    Mix_Chunk * s_game_over;
+    Mix_Chunk * s_extra_frog;
+    Mix_Chunk * s_goal;
 
     /* Global */
 	unsigned int score;
@@ -343,13 +360,29 @@ public:
             game_objects.insert(*snake);
         }
         
-        
+        /* Load solo sprites */
 		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
         grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
         grass_top    = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_top.bmp");
         level_sprite = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/level.bmp");
         victory_frog = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog0.bmp");
         victory_frog_wink = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog1.bmp");
+        
+        /* Load sounds */
+        s_frog_jump     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_jump.wav" );
+        s_frog_drown    = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_drown.wav" );
+        s_frog_roadkill = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_roadkill.wav" );
+        s_time_low      = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/time_low.wav" );
+        s_level_win     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/level_win.wav" );
+        s_game_over     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/game_over.wav" );
+        s_extra_frog    = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/extra_frog.wav" );
+        s_goal          = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/score.wav" );
+        m_music_menu    = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme_menu.wav" );
+        m_music_0       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme0.wav" );
+        m_music_1       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme1.wav" );
+        m_music_2       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme2.wav" );
+        m_music_3       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme3.wav" );
+        m_music_4       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme4.wav" );
 	}
 
 	virtual void Init()
@@ -362,8 +395,9 @@ public:
         paused      = false;
         score       = 0;
         hiScore     = 0;
-        level       = 1;
+        level       = 0;
         game_timer  = GAME_TIMER;
+        extra_frog_counter = 0;
         victory_time       = 0;
         show_victory_timer = 0.f;
         button_bounce_timer = 0.f;
@@ -390,6 +424,7 @@ public:
         victory = false;
         wink_timer = 0.f;
         ResetPockets();
+        engine->playMusic(m_music_0);
 	}
     
     void ResetPockets() {
@@ -405,6 +440,7 @@ public:
     }
     
     void NextLevel() {
+        player->Reset();
         victory     = false;
         wink_timer  = 0.f;
         game_timer  = GAME_TIMER;
@@ -413,13 +449,38 @@ public:
         pocket0 = pocket1 = pocket2 = pocket3 = pocket4 = 0;
         
         ResetPockets();
+        
+        /* Change music to corresponding level */
+        engine->stopMusic();
+        switch(level) {
+            case 1:
+                engine->playMusic(m_music_1);
+                break;
+            case 2:
+                engine->playMusic(m_music_2);
+                break;
+            case 3:
+                engine->playMusic(m_music_3);
+                break;
+            case 4:
+                engine->playMusic(m_music_4);
+                break;
+            default:
+                engine->playMusic(m_music_0);
+                break;
+        }
     }
     
     void TogglePause() {
         if (button_bounce_timer <= 0.f) {
             paused = !paused;
-            if (paused) SDL_Log("Game Paused");
-            else SDL_Log("Game UnPaused");
+            if (paused) {
+                engine->pauseMixer();
+                SDL_Log("Game Paused");
+            } else {
+                engine->resumeMixer();
+                SDL_Log("Game UnPaused");
+            }
             button_bounce_timer = .25f;
         }
     }
@@ -430,11 +491,13 @@ public:
             game_over   = false;
             victory     = false;
             score       = 0;
-            level       = 1;
+            level       = 0;
             game_timer  = GAME_TIMER;
             game_speed  = 1.f;
             button_bounce_timer = .25f;
+            extra_frog_counter  = 0;
             ResetPockets();
+            engine->playMusic(m_music_0);
         }
     }
 
@@ -514,20 +577,38 @@ public:
         player_roadkill->Update(dt);
         
         if (victory) {
+            player->enabled = false;
             wink_timer += (dt/game_speed);
-            if (wink_timer > 4.f) NextLevel();
+            if (wink_timer > 6.f) NextLevel();
         }
         
+        /* Update highscore and victory/button mechanics */
         if (score > hiScore) hiScore = score;
         if (show_victory_timer > 0.f) show_victory_timer -= (dt/game_speed);
         button_bounce_timer = clamp(button_bounce_timer - (dt/game_speed), 0.f, 1.f);
         
+        /* Award the player with an extra life each 10,000 pts */
+        int old_v = extra_frog_counter;
+        extra_frog_counter = score % 10000;
+        if (extra_frog_counter < old_v) {
+            player->lives++;
+            engine->playSound( s_extra_frog );
+        }
+        
         /* Spawn new entities */
         if (running > 0.f) {
             if (game_timer <= 0.f) {
+                if (!game_over) {
+                    engine->stopMusic();
+                    engine->playSound(s_game_over);
+                }
                 game_over = true;
             }
+            float play_time_low = game_timer;
             game_timer = clamp(game_timer - dt * running, 0.f, 100.f);
+            if (play_time_low > 10.f && game_timer <= 10.f) {
+                engine->playSound(s_time_low);
+            }
             
             /* Platforms */
             log_timer_top    -= dt;
@@ -661,7 +742,7 @@ public:
             int spr_w = level_sprite->getImageWidth() + 2;
             int spr_h = level_sprite->getImageHeight();
             int x = SCREEN_WIDTH - (spr_w*2);
-            for (int i = 0; i < level; i++) {
+            for (int i = 0; i <= level; i++) {
                 level_sprite->draw(x - (spr_w * i), SCREEN_HEIGHT - (spr_h*2));
             }
         }
@@ -692,21 +773,30 @@ public:
 
 	virtual void Receive(Message m)
 	{
+        if (m == FROG_JUMP)
+        {
+            engine->playSound(s_frog_jump);
+        }
 		if (m == GAME_OVER)
 		{
             SDL_Log("Game Over!");
             game_over = true;
             player->enabled = false;
+            engine->stopMusic();
+            engine->playSound(s_game_over);
 		}
         
         else if (m == PLAYER_DROWN)
         {
+            engine->playSound(s_frog_drown);
             SDL_Log("Player Drowned");
             player_drown->Init(player->horizontalPosition, player->verticalPosition);
+            
         }
         
         else if (m == PLAYER_ROADKILL)
         {
+            engine->playSound(s_frog_roadkill);
             SDL_Log("Player died on land");
             player_roadkill->Init(player->horizontalPosition, player->verticalPosition);
         }
@@ -718,6 +808,7 @@ public:
         
         else if (m == POCKET_REACHED)
         {
+            engine->playSound( s_goal );
             score += 50;
             score += game_timer * 10;
             victory_time = game_timer;
@@ -734,6 +825,8 @@ public:
                 /* Victory! */
                 victory = true;
                 score += 1000;
+                engine->stopMusic();
+                engine->playSound(s_level_win);
             }
         }
 	}
@@ -752,6 +845,24 @@ public:
         victory_frog->destroy();
         victory_frog_wink->destroy();
         level_sprite->destroy();
+        
+        /* Free sounds */
+        Mix_FreeMusic( m_music_menu );
+        Mix_FreeMusic( m_music_0 );
+        Mix_FreeMusic( m_music_1 );
+        Mix_FreeMusic( m_music_2 );
+        Mix_FreeMusic( m_music_3 );
+        Mix_FreeMusic( m_music_4 );
+        Mix_FreeChunk( s_frog_jump );
+        Mix_FreeChunk( s_frog_drown );
+        Mix_FreeChunk( s_frog_roadkill );
+        Mix_FreeChunk( s_time_low );
+        Mix_FreeChunk( s_level_win );
+        Mix_FreeChunk( s_game_over );
+        Mix_FreeChunk( s_extra_frog );
+        Mix_FreeChunk( s_goal );
+        
+        Mix_CloseAudio();
         
 		delete player;
         delete player_drown;

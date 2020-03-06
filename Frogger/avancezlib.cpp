@@ -32,7 +32,14 @@ bool AvancezLib::init(int width, int height)
     font = TTF_OpenFont("/Users/larsa/Chalmers/TDA572/Data/misc/PressStart2P.ttf", 16); //this opens a font style and sets a size
     if (font == NULL)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "font cannot be created! SDL_Error: %s\n", SDL_GetError());
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Font cannot be created! SDL_Error: %s\n", SDL_GetError());
+        return false;
+    }
+    
+    //Initialize SDL_mixer
+    if( Mix_OpenAudio( 22050, MIX_DEFAULT_FORMAT, 2, 1024 ) == -1 )
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not initialize SDL_mixer! SDL_Error: %s\n", SDL_GetError());
         return false;
     }
     
@@ -194,6 +201,8 @@ void AvancezLib::postProcessing() {
     /* This is my Post processing */
     int warp_y0 = irandom(height-1);
     int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
+    int warp_c0 = (int)(SDL_GetTicks() / 10.f) % 1000;
+    int warp_c1 = (int)(SDL_GetTicks() / 10.f) % 1000;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             
@@ -241,6 +250,13 @@ void AvancezLib::postProcessing() {
                 ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
             }
             
+            /* Color error */
+            if (warp_c0 <= 10) {
+                ((int*)source->pixels)[(y * width) + x] += 0x40404000;
+            } else if (warp_c1 <= 200) {
+                ((int*)source->pixels)[(y * width) + x] += 0x00000100;
+            }
+            
         }
     }
     
@@ -273,6 +289,34 @@ void AvancezLib::clearWindow() {
     SDL_RenderClear(renderer);
 }
 
+void AvancezLib::playSound(Mix_Chunk * sound) {
+    // Play sound effect
+    if( Mix_PlayChannel( -1, sound, 0 ) == -1 )
+    {
+        SDL_Log("Failed to play sound!");
+    }
+}
+
+void AvancezLib::playMusic(Mix_Music * music) {
+    // Stop the old song, and start a new
+    Mix_HaltMusic();
+    if( Mix_PlayMusic( music, -1 ) == -1 )
+    {
+        SDL_Log("Failed to start the music!");
+    }
+}
+
+void AvancezLib::stopMusic() {
+    Mix_HaltMusic();
+}
+void AvancezLib::pauseMixer() {
+    Mix_PauseMusic();
+    Mix_Pause(-1);
+}
+void AvancezLib::resumeMixer() {
+    Mix_ResumeMusic();
+    Mix_Resume(-1);
+}
 
 Sprite * AvancezLib::createSprite(const char * path)
 {

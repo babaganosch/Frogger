@@ -27,13 +27,19 @@ public:
         ground_timer = ground_check_timer;
     }
     
+    void Reset() {
+        GameObject::Init();
+        on_ground = true;
+        ground_timer = ground_check_timer;
+    }
+    
     void Die() {
         if (verticalPosition <= TURTLE_ROW_0) {
             Send(PLAYER_DROWN);
         } else {
             Send(PLAYER_ROADKILL);
         }
-        GameObject::Init();
+        Reset();
         RemoveLife();
         if (lives < 0)
             Send(GAME_OVER);
@@ -73,7 +79,7 @@ public:
         {
             SDL_Log("Pocket reached!");
             Send(POCKET_REACHED);
-            GameObject::Init();
+            Reset();
         }
     }
 
@@ -141,21 +147,25 @@ public:
                 moving = DIRECTION::RIGHT;
                 move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
+                go->Send(FROG_JUMP);
             }
             if (keys.left) {
                 moving = DIRECTION::LEFT;
                 move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
+                go->Send(FROG_JUMP);
             }
             if (keys.up) {
                 moving = DIRECTION::UP;
                 move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
+                go->Send(FROG_JUMP);
             }
             if (keys.down) {
                 moving = DIRECTION::DOWN;
                 move_cooldown = move_timer_start / game_speed;
                 move_distance = jump_distance;
+                go->Send(FROG_JUMP);
             }
         }
         Move(dt);
