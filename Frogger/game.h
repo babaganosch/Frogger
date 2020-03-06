@@ -705,11 +705,12 @@ public:
 	virtual void Draw()
 	{
         char text[256];
-        
+        bool glitch = engine->getGlitch();
+        int draw_highscore = glitch ? 6660 : hiScore;
         /* Score */
         snprintf(text, 256, "HI-SCORE");
         engine->drawText(SCREEN_WIDTH / 2, 1, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
-        snprintf(text, 256, "%05d", hiScore);
+        snprintf(text, 256, "%05d", draw_highscore);
         engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
         engine->drawText(SCREEN_WIDTH / 4, 1, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);

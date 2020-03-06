@@ -98,6 +98,9 @@ public:
         return height;
     }
     
+    // Returns true if engine is in 'glitch' mode
+    bool getGlitch();
+    
     void playSound(Mix_Chunk * sound);
     void playMusic(Mix_Music * music);
     void stopMusic();
@@ -112,5 +115,6 @@ private:
     KeyStatus key;
     int width, height;
     bool enable_post_processing;
+    bool glitch;
 };
 

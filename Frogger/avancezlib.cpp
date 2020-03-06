@@ -58,6 +58,7 @@ bool AvancezLib::init(int width, int height)
     
     // Enable Post Processing
     enable_post_processing = true;
+    glitch = false;
 
     // Initialize renderer color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -177,6 +178,10 @@ void AvancezLib::togglePostProcessing() {
     enable_post_processing = !enable_post_processing;
 }
 
+bool AvancezLib::getGlitch() {
+    return glitch;
+}
+
 void AvancezLib::postProcessing() {
     if (!enable_post_processing) return;
     
@@ -199,10 +204,11 @@ void AvancezLib::postProcessing() {
     SDL_RenderClear(renderer);
     float centerX = width/2, centerY = height/2;
     /* This is my Post processing */
+    const int glitch_intervall = 150; /* in ms */
     int warp_y0 = irandom(height-1);
     int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
-    int warp_c0 = (int)(SDL_GetTicks() / 10.f) % 1000;
-    int warp_c1 = (int)(SDL_GetTicks() / 10.f) % 1000;
+    int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 5000;
+    int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 5000;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             
@@ -253,15 +259,20 @@ void AvancezLib::postProcessing() {
             /* Color error */
             if (warp_c0 <= 10) {
                 ((int*)source->pixels)[(y * width) + x] += 0x40404000;
-            } else if (warp_c1 <= 200) {
+            } else if (warp_c1 <= glitch_intervall) {
                 ((int*)source->pixels)[(y * width) + x] += 0x00000100;
             }
             
         }
     }
     
-    //Create texture from surface pixels
+    if (warp_c1 > glitch_intervall) {
+        glitch = false;
+    } else {
+        glitch = true;
+    }
     
+    //Create texture from surface pixels
     SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, source);
     if (texture == NULL)
     {
