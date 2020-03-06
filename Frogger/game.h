@@ -753,8 +753,6 @@ public:
             snprintf(text, 256, "%05d", score);
             engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
         } else {
-            snprintf(text, 256, "xxxxxxxx");
-            engine->drawText((SCREEN_WIDTH / 3)*2, 64, text, H_ALIGN::LEFT, V_ALIGN::TOP, c_white);
             snprintf(text, 256, "natas");
             engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
         }

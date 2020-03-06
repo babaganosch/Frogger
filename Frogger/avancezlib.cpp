@@ -207,8 +207,8 @@ void AvancezLib::postProcessing() {
     const int glitch_intervall = 250; /* in ms */
     const int warp_y0 = irandom(height-1);
     const int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
-    const int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 2000;
-    const int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 2000;
+    const int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 4000;
+    const int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 4000;
     const int glitch_y0 = 18;
     const int glitch_y1 = (height / 3);
     const int glitch_y2 = (height / 4)*3;
