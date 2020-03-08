@@ -1,5 +1,4 @@
 #include "avancezlib.h"
-#include "util.h"
 
 bool AvancezLib::init(int width, int height)
 {
@@ -29,7 +28,7 @@ bool AvancezLib::init(int width, int height)
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     TTF_Init();
-    font = TTF_OpenFont("/Users/larsa/Chalmers/TDA572/Data/misc/PressStart2P.ttf", 16); //this opens a font style and sets a size
+    font = TTF_OpenFont("/Users/larsa/Chalmers/TDA572/Data/misc/PressStart2P.ttf", 16);
     if (font == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Font cannot be created! SDL_Error: %s\n", SDL_GetError());

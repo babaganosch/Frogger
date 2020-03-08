@@ -18,6 +18,7 @@ void RenderComponent::Create(AvancezLib * engine, GameObject * go, std::set<Game
     image_number   = 1;
     image_index    = 0.f;
     animation_speed = speed;
+    animation_mode = REGULAR;
     /* Setup standard BBOX */
     go->width  = sprite->getImageWidth();
     go->height = sprite->getImageHeight();
@@ -39,6 +40,10 @@ void RenderComponent::SetImageSpeed(const double speed) {
     animation_speed = speed;
 }
 
+void RenderComponent::SetAnimationMode(AnimationMode mode) {
+    animation_mode = mode;
+}
+
 void RenderComponent::Update(float dt)
 {
 	if (!go->enabled)
@@ -58,7 +63,24 @@ void RenderComponent::Update(float dt)
     
     float old_index = image_index;
     image_index = fmod(image_index + (animation_speed * dt), image_number);
-    if (image_index < old_index) go->Receive(ANIMATION_END);
+    if (animation_mode == REGULAR) {
+        if (image_index < old_index) go->Receive(ANIMATION_END);
+    } else if (animation_mode == PING_PONG) {
+        if (animation_speed >= 0.f) {
+            if (image_index < old_index) {
+                go->Receive(ANIMATION_END);
+                animation_speed = -animation_speed;
+                image_index = image_number+(animation_speed*dt);
+            }
+        } else {
+            if (image_index < 0.f) {
+                go->Receive(ANIMATION_BEGIN);
+                animation_speed = -animation_speed;
+                image_index = 0.f;
+            }
+        }
+    }
+    
 }
 
 void RenderComponent::Destroy()

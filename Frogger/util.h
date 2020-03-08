@@ -9,6 +9,9 @@
 #ifndef util_h
 #define util_h
 
+#include <math.h>
+#include <stdlib.h>
+
 /* Clamp: Helper function to clamp values into an interval */
 double clamp(double x, double lower, double upper);
 

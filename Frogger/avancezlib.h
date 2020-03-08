@@ -1,11 +1,9 @@
 #pragma once
 
-
-
 #include <SDL2/SDL.h>
 #include <SDL_ttf.h>
 #include <SDL_mixer.h>
-#include <iostream>
+#include "util.h"
 
 enum class H_ALIGN { LEFT, CENTER, RIGHT };
 enum class V_ALIGN { TOP, CENTER, BOT };

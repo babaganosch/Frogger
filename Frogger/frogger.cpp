@@ -1,16 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "stdio.h"
+#include <stdio.h>
 #include "avancezlib.h"
 #include "object_pool.h"
-
+#include <string>
 #include <set>
+
+std::string data_path = "/Users/larsa/Chalmers/TDA572/Data/";
 
 const unsigned int  SCREEN_WIDTH     = 448;
 const unsigned int  SCREEN_HEIGHT    = 512;
 const unsigned int  CELL_S           = 32;
-
-const unsigned int	NUM_LIVES        = 5;
 
 const unsigned int  POCKET_ROW       = CELL_S*2;
 
@@ -29,6 +29,7 @@ const unsigned int  CAR_LANE_0       = SCREEN_HEIGHT-(CELL_S*3);
 const unsigned int  GRASS_GREEN_ROW_TOP = SCREEN_HEIGHT-(CELL_S*8);
 const unsigned int  GRASS_GREEN_ROW_BOT = SCREEN_HEIGHT-(CELL_S*2);
 
+const unsigned int  NUM_LIVES        = 5;
 const float GAME_TIMER               = 60.f;
 
 const float SLOW_PLATFORM_SPEED      = 60.f;
@@ -42,8 +43,9 @@ const float SNAKE_SPEED              = 40.f;
 
 
 
-float game_speed = 1.f;		// speed of the game; it is increased each time all the aliens are hit
-							// it is also the score multiplier
+
+float game_speed = 1.f; // Game speed is increased each level (5 delivered frogs)
+
 
 #include "util.h"
 #include "component.h"

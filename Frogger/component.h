@@ -27,11 +27,13 @@ public:
 	virtual void Destroy() {}
 };
 
+enum AnimationMode { REGULAR, PING_PONG };
 
 class RenderComponent : public Component
 {
     std::vector<Sprite*> sprites;
     unsigned int image_number;
+    AnimationMode animation_mode;
     double image_index;
     double animation_speed;
 
@@ -44,6 +46,7 @@ public:
     void AddSprite(const char * sprite_name);
     void SetImageIndex(const unsigned int index);
     void SetImageSpeed(const double speed);
+    void SetAnimationMode(AnimationMode mode);
     unsigned int GetImageIndex() {return image_index;};
 };
 

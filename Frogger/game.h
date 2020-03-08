@@ -39,6 +39,7 @@ class Game : public GameObject
     
     /* Platform pools */
     ObjectPool<Turtle> turtle_pool;
+    ObjectPool<Turtle> sinkable_turtle_pool;
     ObjectPool<Log>    log_pool_small;
     ObjectPool<Log>    log_pool_medium;
     ObjectPool<Log>    log_pool_large;
@@ -109,8 +110,8 @@ public:
         GrudgeBehaviourComponent * grudge_behaviour = new GrudgeBehaviourComponent();
         grudge_behaviour->Create(engine, grudge, &game_objects);
         RenderComponent * grudge_render = new RenderComponent();
-        grudge_render->Create(engine, grudge, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/grudge0.bmp", 4.f);
-        grudge_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/misc/grudge1.bmp");
+        grudge_render->Create(engine, grudge, &game_objects, (data_path + "misc/grudge0.bmp").c_str(), 4.f);
+        grudge_render->AddSprite( (data_path + "misc/grudge1.bmp").c_str() );
         grudge->Create();
         grudge->AddComponent(grudge_behaviour);
         grudge->AddComponent(grudge_render);
@@ -131,6 +132,8 @@ public:
         small_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_small, ON_GROUND);
         CollideComponent * turtle_collider = new CollideComponent();
         turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &turtle_pool, ON_GROUND);
+        TurtleCollideComponent * sinkable_turtle_collider = new TurtleCollideComponent();
+        sinkable_turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &sinkable_turtle_pool, ON_GROUND);
         
         /* Vehicle colliders */
         CollideComponent * car0_collider = new CollideComponent();
@@ -154,10 +157,10 @@ public:
         
         /* Renderer */
 		RenderComponent * player_render = new RenderComponent();
-        player_render->Create(engine, player, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/frog/frog0.bmp", 0.f);
-        player_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog1.bmp");
-        player_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog2.bmp");
-        player_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/frog/frog3.bmp");
+        player_render->Create(engine, player, &game_objects, (data_path + "frog/frog0.bmp").c_str(), 0.f);
+        player_render->AddSprite( (data_path + "frog/frog1.bmp").c_str());
+        player_render->AddSprite( (data_path + "frog/frog2.bmp").c_str());
+        player_render->AddSprite( (data_path + "frog/frog3.bmp").c_str());
         
         player->Create();
         player->AddComponent(player_behaviour);
@@ -169,6 +172,7 @@ public:
         player->AddComponent(medium_log_collider);
         player->AddComponent(small_log_collider);
         player->AddComponent(turtle_collider);
+        player->AddComponent(sinkable_turtle_collider);
         player->AddComponent(car0_collider);
         player->AddComponent(car1_collider);
         player->AddComponent(car2_collider);
@@ -180,22 +184,22 @@ public:
         /* Player death animation */
         player_drown = new PlayerDeath();
         RenderComponent * player_drown_render = new RenderComponent();
-        player_drown_render->Create(engine, player_drown, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_drown0.bmp", 4.f);
-        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown1.bmp");
-        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_drown2.bmp");
-        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
-        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
-        player_drown_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_drown_render->Create(engine, player_drown, &game_objects, (data_path + "death/frog_drown0.bmp").c_str(), 4.f);
+        player_drown_render->AddSprite( (data_path + "death/frog_drown1.bmp").c_str() );
+        player_drown_render->AddSprite( (data_path + "death/frog_drown2.bmp").c_str() );
+        player_drown_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
+        player_drown_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
+        player_drown_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
         player_drown->AddComponent(player_drown_render);
         
         player_roadkill = new PlayerDeath();
         RenderComponent * player_roadkill_render = new RenderComponent();
-        player_roadkill_render->Create(engine, player_roadkill, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill0.bmp", 4.f);
-        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill1.bmp");
-        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/frog_roadkill2.bmp");
-        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
-        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
-        player_roadkill_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/death/skull.bmp");
+        player_roadkill_render->Create(engine, player_roadkill, &game_objects, (data_path + "death/frog_roadkill0.bmp").c_str(), 4.f);
+        player_roadkill_render->AddSprite( (data_path + "death/frog_roadkill1.bmp").c_str() );
+        player_roadkill_render->AddSprite( (data_path + "death/frog_roadkill2.bmp").c_str() );
+        player_roadkill_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
+        player_roadkill_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
+        player_roadkill_render->AddSprite( (data_path + "death/skull.bmp").c_str() );
         player_roadkill->AddComponent(player_roadkill_render);
         
         goal_pool.Create(5);
@@ -215,9 +219,29 @@ public:
             TurtleBehaviourComponent * turtle_behaviour = new TurtleBehaviourComponent();
             turtle_behaviour->Create(engine, *turtle, &game_objects);
             RenderComponent * turtle_render = new RenderComponent();
-            turtle_render->Create(engine, *turtle, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/turtle/turtle2.bmp", 4.f);
-            turtle_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/turtle/turtle1.bmp");
-            turtle_render->AddSprite("/Users/larsa/Chalmers/TDA572/Data/turtle/turtle0.bmp");
+            turtle_render->Create(engine, *turtle, &game_objects, (data_path + "turtle/turtle2.bmp").c_str(), 4.f);
+            turtle_render->AddSprite( (data_path + "turtle/turtle1.bmp").c_str() );
+            turtle_render->AddSprite( (data_path + "turtle/turtle0.bmp").c_str() );
+            (*turtle)->Create();
+            (*turtle)->AddComponent(turtle_behaviour);
+            (*turtle)->AddComponent(turtle_render);
+            (*turtle)->AddReceiver(this);
+            game_objects.insert(*turtle);
+        }
+        
+        sinkable_turtle_pool.Create(20);
+        for (auto turtle = sinkable_turtle_pool.pool.begin(); turtle != sinkable_turtle_pool.pool.end(); turtle++)
+        {
+            TurtleBehaviourComponent * turtle_behaviour = new TurtleBehaviourComponent();
+            turtle_behaviour->Create(engine, *turtle, &game_objects);
+            RenderComponent * turtle_render = new RenderComponent();
+            turtle_render->Create(engine, *turtle, &game_objects, (data_path + "turtle/turtle2.bmp").c_str(), 4.f);
+            turtle_render->AddSprite( (data_path + "turtle/turtle1.bmp").c_str() );
+            turtle_render->AddSprite( (data_path + "turtle/turtle0.bmp").c_str() );
+            turtle_render->AddSprite( (data_path + "turtle/turtle3.bmp").c_str() );
+            turtle_render->AddSprite( (data_path + "turtle/turtle4.bmp").c_str() );
+            turtle_render->AddSprite( (data_path + "turtle/turtle5.bmp").c_str() );
+            turtle_render->SetAnimationMode(PING_PONG);
             (*turtle)->Create();
             (*turtle)->AddComponent(turtle_behaviour);
             (*turtle)->AddComponent(turtle_render);
@@ -231,7 +255,7 @@ public:
             LogBehaviourComponent * log_behaviour = new LogBehaviourComponent();
             log_behaviour->Create(engine, *log, &game_objects);
             RenderComponent * log_renderer = new RenderComponent();
-            log_renderer->Create(engine, *log, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/logs/log_s.bmp", 0.f);
+            log_renderer->Create(engine, *log, &game_objects, (data_path + "logs/log_s.bmp").c_str(), 0.f);
             (*log)->Create();
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
@@ -245,7 +269,7 @@ public:
             LogBehaviourComponent * log_behaviour = new LogBehaviourComponent();
             log_behaviour->Create(engine, *log, &game_objects);
             RenderComponent * log_renderer = new RenderComponent();
-            log_renderer->Create(engine, *log, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/logs/log_m.bmp", 0.f);
+            log_renderer->Create(engine, *log, &game_objects, (data_path + "logs/log_m.bmp").c_str(), 0.f);
             (*log)->Create();
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
@@ -259,7 +283,7 @@ public:
             LogBehaviourComponent * log_behaviour = new LogBehaviourComponent();
             log_behaviour->Create(engine, *log, &game_objects);
             RenderComponent * log_renderer = new RenderComponent();
-            log_renderer->Create(engine, *log, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/logs/log_l.bmp", 0.f);
+            log_renderer->Create(engine, *log, &game_objects, (data_path + "logs/log_l.bmp").c_str(), 0.f);
             (*log)->Create();
             (*log)->AddComponent(log_behaviour);
             (*log)->AddComponent(log_renderer);
@@ -274,7 +298,7 @@ public:
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
             car_behaviour->Create(engine, *car, &game_objects);
             RenderComponent * car_renderer = new RenderComponent();
-            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car4.bmp", 0.f);
+            car_renderer->Create(engine, *car, &game_objects, (data_path + "cars/car4.bmp").c_str(), 0.f);
             (*car)->Create();
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
@@ -288,7 +312,7 @@ public:
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
             car_behaviour->Create(engine, *car, &game_objects);
             RenderComponent * car_renderer = new RenderComponent();
-            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car3.bmp", 0.f);
+            car_renderer->Create(engine, *car, &game_objects, (data_path + "cars/car3.bmp").c_str(), 0.f);
             (*car)->Create();
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
@@ -302,7 +326,7 @@ public:
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
             car_behaviour->Create(engine, *car, &game_objects);
             RenderComponent * car_renderer = new RenderComponent();
-            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car2.bmp", 0.f);
+            car_renderer->Create(engine, *car, &game_objects, (data_path + "cars/car2.bmp").c_str(), 0.f);
             (*car)->Create();
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
@@ -316,7 +340,7 @@ public:
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
             car_behaviour->Create(engine, *car, &game_objects);
             RenderComponent * car_renderer = new RenderComponent();
-            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car1.bmp", 0.f);
+            car_renderer->Create(engine, *car, &game_objects, (data_path + "cars/car1.bmp").c_str(), 0.f);
             (*car)->Create();
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
@@ -330,7 +354,7 @@ public:
             CarBehaviourComponent * car_behaviour = new CarBehaviourComponent();
             car_behaviour->Create(engine, *car, &game_objects);
             RenderComponent * car_renderer = new RenderComponent();
-            car_renderer->Create(engine, *car, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/cars/car0.bmp", 0.f);
+            car_renderer->Create(engine, *car, &game_objects, (data_path + "cars/car0.bmp").c_str(), 0.f);
             (*car)->Create();
             (*car)->AddComponent(car_behaviour);
             (*car)->AddComponent(car_renderer);
@@ -342,7 +366,7 @@ public:
         for (auto scr = score100_pool.pool.begin(); scr != score100_pool.pool.end(); scr++)
         {
             RenderComponent * scr_renderer = new RenderComponent();
-            scr_renderer->Create(engine, *scr, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/score_100.bmp", 1.f);
+            scr_renderer->Create(engine, *scr, &game_objects, (data_path + "misc/score_100.bmp").c_str(), 1.f);
             (*scr)->Create();
             (*scr)->AddComponent(scr_renderer);
             (*scr)->AddReceiver(this);
@@ -352,7 +376,7 @@ public:
         for (auto scr = score200_pool.pool.begin(); scr != score200_pool.pool.end(); scr++)
         {
             RenderComponent * scr_renderer = new RenderComponent();
-            scr_renderer->Create(engine, *scr, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/misc/score_200.bmp", 1.f);
+            scr_renderer->Create(engine, *scr, &game_objects, (data_path + "misc/score_200.bmp").c_str(), 1.f);
             (*scr)->Create();
             (*scr)->AddComponent(scr_renderer);
             (*scr)->AddReceiver(this);
@@ -365,10 +389,10 @@ public:
             SnakeBehaviourComponent * snake_behaviour = new SnakeBehaviourComponent();
             snake_behaviour->Create(engine, *snake, &game_objects);
             RenderComponent * snake_renderer = new RenderComponent();
-            snake_renderer->Create(engine, *snake, &game_objects, "/Users/larsa/Chalmers/TDA572/Data/snake/snake0.bmp", 7.f);
-            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
-            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake2.bmp");
-            snake_renderer->AddSprite("/Users/larsa/Chalmers/TDA572/Data/snake/snake1.bmp");
+            snake_renderer->Create(engine, *snake, &game_objects, (data_path + "snake/snake0.bmp").c_str(), 7.f);
+            snake_renderer->AddSprite( (data_path + "snake/snake1.bmp").c_str() );
+            snake_renderer->AddSprite( (data_path + "snake/snake2.bmp").c_str() );
+            snake_renderer->AddSprite( (data_path + "snake/snake1.bmp").c_str() );
             (*snake)->Create();
             (*snake)->AddComponent(snake_behaviour);
             (*snake)->AddComponent(snake_renderer);
@@ -377,29 +401,29 @@ public:
         }
         
         /* Load solo sprites */
-		life_sprite  = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/frog_life.bmp");
-        grass_purple = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_purple.bmp");
-        grass_top    = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/bg/grass_top.bmp");
-        level_sprite = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/level.bmp");
-        victory_frog = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog0.bmp");
-        victory_frog_wink = engine->createSprite("/Users/larsa/Chalmers/TDA572/Data/misc/victory_frog1.bmp");
+		life_sprite  = engine->createSprite( (data_path + "misc/frog_life.bmp").c_str() );
+        grass_purple = engine->createSprite( (data_path + "bg/grass_purple.bmp").c_str() );
+        grass_top    = engine->createSprite( (data_path + "bg/grass_top.bmp").c_str() );
+        level_sprite = engine->createSprite( (data_path + "misc/level.bmp").c_str() );
+        victory_frog = engine->createSprite( (data_path + "misc/victory_frog0.bmp").c_str() );
+        victory_frog_wink = engine->createSprite( (data_path + "misc/victory_frog1.bmp").c_str() );
         
         /* Load sounds */
-        s_frog_jump     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_jump.wav" );
-        s_frog_drown    = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_drown.wav" );
-        s_frog_roadkill = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/frog_roadkill.wav" );
-        s_time_low      = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/time_low.wav" );
-        s_level_win     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/level_win.wav" );
-        s_game_over     = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/game_over.wav" );
-        s_extra_frog    = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/extra_frog.wav" );
-        s_goal          = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/score.wav" );
-        s_glitched      = Mix_LoadWAV( "/Users/larsa/Chalmers/TDA572/Data/sounds/glitched.wav" );
-        m_music_menu    = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme_menu.wav" );
-        m_music_0       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme0.wav" );
-        m_music_1       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme1.wav" );
-        m_music_2       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme2.wav" );
-        m_music_3       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme3.wav" );
-        m_music_4       = Mix_LoadMUS( "/Users/larsa/Chalmers/TDA572/Data/sounds/theme4.wav" );
+        s_frog_jump     = Mix_LoadWAV( (data_path + "sounds/frog_jump.wav").c_str() );
+        s_frog_drown    = Mix_LoadWAV( (data_path + "sounds/frog_drown.wav").c_str() );
+        s_frog_roadkill = Mix_LoadWAV( (data_path + "sounds/frog_roadkill.wav").c_str() );
+        s_time_low      = Mix_LoadWAV( (data_path + "sounds/time_low.wav").c_str() );
+        s_level_win     = Mix_LoadWAV( (data_path + "sounds/level_win.wav").c_str() );
+        s_game_over     = Mix_LoadWAV( (data_path + "sounds/game_over.wav").c_str() );
+        s_extra_frog    = Mix_LoadWAV( (data_path + "sounds/extra_frog.wav").c_str() );
+        s_goal          = Mix_LoadWAV( (data_path + "sounds/score.wav").c_str() );
+        s_glitched      = Mix_LoadWAV( (data_path + "sounds/glitched.wav").c_str() );
+        m_music_menu    = Mix_LoadMUS( (data_path + "sounds/theme_menu.wav").c_str() );
+        m_music_0       = Mix_LoadMUS( (data_path + "sounds/theme0.wav").c_str() );
+        m_music_1       = Mix_LoadMUS( (data_path + "sounds/theme1.wav").c_str() );
+        m_music_2       = Mix_LoadMUS( (data_path + "sounds/theme2.wav").c_str() );
+        m_music_3       = Mix_LoadMUS( (data_path + "sounds/theme3.wav").c_str() );
+        m_music_4       = Mix_LoadMUS( (data_path + "sounds/theme4.wav").c_str() );
 	}
 
 	virtual void Init()
@@ -661,8 +685,13 @@ public:
             if (turtle_timer_top <= 0.f) {
                 /* SPAWN TURTLES */
                 turtle_timer_top = 2.f;
-                turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
-                turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
+                if (percentChance(75)) {
+                    turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
+                    turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
+                } else {
+                    sinkable_turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
+                    sinkable_turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
+                }
             }
             if (log_timer_mid <= 0.f) {
                 /* SPAWN LARGE LOG */
@@ -684,10 +713,19 @@ public:
             }
             if (turtle_timer_bot <= 0.f) {
                 /* SPAWN TURTLES */
-                turtle_timer_bot = 3.f;
-                turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
-                turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
-                turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+64, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                turtle_timer_bot = percentChance(50) ? 3.f : 1.5f;
+                if (percentChance(66)) {
+                    /* Regular turtles */
+                    turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                    turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                    turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+64, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                } else {
+                    /* Sinkable turtles */
+                    sinkable_turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                    sinkable_turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                    sinkable_turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+64, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
+                }
+                
             }
             
             
