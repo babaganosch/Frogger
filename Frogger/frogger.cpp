@@ -6,7 +6,7 @@
 #include <string>
 #include <set>
 
-std::string data_path = "/Users/larsa/Chalmers/TDA572/Data/";
+const std::string data_path = "/Users/larsa/Chalmers/TDA572/Data/";
 
 const unsigned int  SCREEN_WIDTH     = 448;
 const unsigned int  SCREEN_HEIGHT    = 512;
@@ -59,6 +59,8 @@ float game_speed = 1.f; // Game speed is increased each level (5 delivered frogs
 #include "animation.h"
 #include "snake.h"
 #include "grudge.h"
+#include "bug.h"
+#include "croc.h"
 
 #include "game.h"
 

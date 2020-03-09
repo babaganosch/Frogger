@@ -8,6 +8,7 @@ const SDL_Color c_red    = { 255, 0,   0,   255 };
 const SDL_Color c_yellow = { 255, 255, 0,   255 };
 const SDL_Color c_green  = { 33,  222, 0,   255 };
 const SDL_Color c_river  = { 0,   0,   71,  255 };
+const SDL_Color c_hell   = { 151, 0,   247, 255 }; /* Purple, but gets shifted to about RED */
 
 class Game : public GameObject
 {
@@ -16,6 +17,8 @@ class Game : public GameObject
 	AvancezLib* engine;
 	Player * player;
     Grudge * grudge;
+    Bug  * bug;
+    Croc * croc;
     PlayerDeath * player_drown;
     PlayerDeath * player_roadkill;
 	Sprite * life_sprite;
@@ -31,10 +34,12 @@ class Game : public GameObject
     float wink_timer;
     Sprite * victory_frog;
     Sprite * victory_frog_wink;
+    
+    /* Misc pools */
     ObjectPool<Pocket> goal_pool;
     
     /* Score pools */
-    ObjectPool<ScoreAnimation>    score100_pool;
+    ObjectPool<ScoreAnimation>    score666_pool;
     ObjectPool<ScoreAnimation>    score200_pool;
     
     /* Platform pools */
@@ -77,12 +82,14 @@ class Game : public GameObject
     bool         game_over;
     bool         paused;
     bool         glitched;
+    float        glitch_timer;
     float        show_victory_timer;
     float        button_bounce_timer;
     int          level;
     
     /* Timers */
     float        game_timer;
+    float        bug_timer;
     float        log_timer_top;
     float        log_timer_mid;
     float        log_timer_bot;
@@ -118,6 +125,31 @@ public:
         grudge->AddReceiver(this);
         game_objects.insert(grudge);
         
+        // Bug
+        bug = new Bug();
+        BugBehaviourComponent * bug_behaviour = new BugBehaviourComponent();
+        bug_behaviour->Create(engine, bug, &game_objects);
+        RenderComponent * bug_render = new RenderComponent();
+        bug_render->Create(engine, bug, &game_objects, (data_path + "misc/bug.bmp").c_str(), 0.f);
+        bug->Create();
+        bug->AddComponent(bug_behaviour);
+        bug->AddComponent(bug_render);
+        bug->AddReceiver(this);
+        game_objects.insert(bug);
+        
+        // Croc
+        croc = new Croc();
+        CrocBehaviourComponent * croc_behaviour = new CrocBehaviourComponent();
+        croc_behaviour->Create(engine, croc, &game_objects);
+        RenderComponent * croc_render = new RenderComponent();
+        croc_render->Create(engine, croc, &game_objects, (data_path + "misc/croc0.bmp").c_str(), 0.3f);
+        croc_render->AddSprite((data_path + "misc/croc1.bmp").c_str());
+        croc->Create();
+        croc->AddComponent(croc_behaviour);
+        croc->AddComponent(croc_render);
+        croc->AddReceiver(this);
+        game_objects.insert(croc);
+        
         // Player
 		player = new Player();
 		PlayerBehaviourComponent * player_behaviour = new PlayerBehaviourComponent();
@@ -150,10 +182,16 @@ public:
         /* Enemy collider */
         CollideComponent * snake_collider = new CollideComponent();
         snake_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &snake_pool, HIT);
+        SingleCollideComponent * grudge_collider = new SingleCollideComponent();
+        grudge_collider->Create(engine, player, &game_objects, grudge, GRUDGE_COLLIDE);
+        CrocCollideComponent * croc_collider = new CrocCollideComponent();
+        croc_collider->Create(engine, player, &game_objects, croc, HIT);
         
         /* Goal colliders */
         CollideComponent * pocket_collider = new CollideComponent();
         pocket_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &goal_pool, POCKET_REACHED);
+        SingleCollideComponent * bug_collider = new SingleCollideComponent();
+        bug_collider->Create(engine, player, &game_objects, bug, BUG_COLLECTED);
         
         /* Renderer */
 		RenderComponent * player_render = new RenderComponent();
@@ -179,7 +217,10 @@ public:
         player->AddComponent(car3_collider);
         player->AddComponent(car4_collider);
         player->AddComponent(snake_collider);
+        player->AddComponent(grudge_collider);
+        player->AddComponent(croc_collider);
         player->AddComponent(pocket_collider);
+        player->AddComponent(bug_collider);
         
         /* Player death animation */
         player_drown = new PlayerDeath();
@@ -362,17 +403,17 @@ public:
             game_objects.insert(*car);
         }
         
-        score100_pool.Create(3);
-        for (auto scr = score100_pool.pool.begin(); scr != score100_pool.pool.end(); scr++)
+        score666_pool.Create(2);
+        for (auto scr = score666_pool.pool.begin(); scr != score666_pool.pool.end(); scr++)
         {
             RenderComponent * scr_renderer = new RenderComponent();
-            scr_renderer->Create(engine, *scr, &game_objects, (data_path + "misc/score_100.bmp").c_str(), 1.f);
+            scr_renderer->Create(engine, *scr, &game_objects, (data_path + "misc/score_666.bmp").c_str(), 1.f);
             (*scr)->Create();
             (*scr)->AddComponent(scr_renderer);
             (*scr)->AddReceiver(this);
             game_objects.insert(*scr);
         }
-        score200_pool.Create(3);
+        score200_pool.Create(2);
         for (auto scr = score200_pool.pool.begin(); scr != score200_pool.pool.end(); scr++)
         {
             RenderComponent * scr_renderer = new RenderComponent();
@@ -399,6 +440,7 @@ public:
             (*snake)->AddReceiver(this);
             game_objects.insert(*snake);
         }
+        
         
         /* Load solo sprites */
 		life_sprite  = engine->createSprite( (data_path + "misc/frog_life.bmp").c_str() );
@@ -442,10 +484,12 @@ public:
         hiScore     = 0;
         level       = 0;
         game_timer  = GAME_TIMER;
-        extra_frog_counter = 0;
-        victory_time       = 0;
-        show_victory_timer = 0.f;
+        extra_frog_counter  = 0;
+        victory_time        = 0;
+        show_victory_timer  = 0.f;
         button_bounce_timer = 0.f;
+        glitch_timer        = 0.f;
+        bug_timer           = 0.f;
         
         /* Timers */
         log_timer_top    = 1.5f;
@@ -453,11 +497,11 @@ public:
         log_timer_mid    = 0.f;
         log_timer_bot    = 0.f;
         turtle_timer_bot = 0.f;
-        car4_timer = 0.f;
-        car3_timer = 0.f;
-        car2_timer = 0.f;
-        car1_timer = 0.f;
-        car0_timer = 0.f;
+        car4_timer  = 0.f;
+        car3_timer  = 0.f;
+        car2_timer  = 0.f;
+        car1_timer  = 0.f;
+        car0_timer  = 0.f;
         snake_timer = 3.f;
         
         /* Pockets */
@@ -469,7 +513,7 @@ public:
         victory = false;
         wink_timer = 0.f;
         ResetPockets();
-        engine->playMusic(m_music_0);
+        engine->playMusic(m_music_1);
 	}
     
     void ResetPockets() {
@@ -499,7 +543,7 @@ public:
         engine->stopMusic();
         switch(level) {
             case 1:
-                engine->playMusic(m_music_1);
+                engine->playMusic(m_music_0);
                 break;
             case 2:
                 engine->playMusic(m_music_2);
@@ -511,7 +555,7 @@ public:
                 engine->playMusic(m_music_4);
                 break;
             default:
-                engine->playMusic(m_music_0);
+                engine->playMusic(m_music_1);
                 break;
         }
     }
@@ -542,8 +586,33 @@ public:
             button_bounce_timer = .25f;
             extra_frog_counter  = 0;
             ResetPockets();
+            engine->stopAllSounds();
             engine->playMusic(m_music_0);
         }
+    }
+    
+    void SpawnBug() {
+        int y = 60;
+        std::vector<int> x;
+        if (!pocket0) x.push_back(16);
+        if (!pocket1) x.push_back(112);
+        if (!pocket2) x.push_back(208);
+        if (!pocket3) x.push_back(304);
+        if (!pocket4) x.push_back(400);
+        int size = (int)x.size();
+        if (size > 0) bug->Init(x.at(irandom(size)), y);
+    }
+    
+    void SpawnCroc() {
+        int y = 64;
+        std::vector<int> x;
+        if (!pocket0) x.push_back(16);
+        if (!pocket1) x.push_back(112);
+        if (!pocket2) x.push_back(208);
+        if (!pocket3) x.push_back(304);
+        if (!pocket4) x.push_back(400);
+        int size = (int)x.size();
+        if (size > 0) croc->Init(x.at(irandom(size)), y);
     }
 
 	virtual void Update(float dt)
@@ -641,21 +710,36 @@ public:
             engine->playSound( s_extra_frog );
         }
         
-        /* Game Mechanics */
-        if (running > 0.f) {
-            /* GLITCH */
-            bool was_glitched = glitched;
-            glitched = engine->getGlitch();
-            if (glitched && !was_glitched) {
-                engine->pauseMixer();
-                engine->playSound( s_glitched );
-                grudge->enabled = true;
-            } else if (was_glitched && !glitched) {
+        /* GLITCH */
+        if (glitched) {
+            grudge->SetTarget(player->horizontalPosition, player->verticalPosition);
+            if (glitch_timer >= 4.8f) {
+                engine->setPostFX(CRT);
                 engine->resumeMixer();
                 grudge->enabled = false;
+                glitched = false;
+                glitch_timer = 0.f;
             }
-            if (glitched) grudge->SetTarget(player->horizontalPosition, player->verticalPosition);
-            
+        } else {
+            if (glitch_timer >= 45.f && !game_over) {
+                engine->setPostFX(GLITCH);
+                engine->pauseMixer();
+                engine->playSound( s_glitched, 1 );
+                grudge->enabled = true;
+                glitched = true;
+                glitch_timer = 0.f;
+            }
+        }
+        
+        if (game_over) {
+            grudge->enabled = false;
+            glitched = false;
+        }
+        
+        /* Game Mechanics */
+        if (running > 0.f) {
+            glitch_timer += (dt / game_speed);
+            bug_timer -= (dt / game_speed);
             
             if (game_timer <= 0.f) {
                 if (!game_over) {
@@ -668,6 +752,20 @@ public:
             game_timer = clamp(game_timer - dt * running, 0.f, 100.f);
             if (play_time_low > 10.f && game_timer <= 10.f) {
                 engine->playSound(s_time_low);
+            }
+            
+            /* Spawn BUGS and CROCS */
+            if (bug_timer <= 0.f) {
+                bug->enabled = false;
+                croc->enabled = false;
+                if (percentChance(50)) {
+                    if (percentChance(50)) {
+                        SpawnBug();
+                    } else {
+                        SpawnCroc();
+                    }
+                }
+                bug_timer = 5.f + random(10.f);
             }
             
             /* Platforms */
@@ -685,7 +783,7 @@ public:
             if (turtle_timer_top <= 0.f) {
                 /* SPAWN TURTLES */
                 turtle_timer_top = 2.f;
-                if (percentChance(75)) {
+                if (percentChance(80)) {
                     turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
                     turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_1, -SLOW_PLATFORM_SPEED);
                 } else {
@@ -714,7 +812,7 @@ public:
             if (turtle_timer_bot <= 0.f) {
                 /* SPAWN TURTLES */
                 turtle_timer_bot = percentChance(50) ? 3.f : 1.5f;
-                if (percentChance(66)) {
+                if (percentChance(80)) {
                     /* Regular turtles */
                     turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH,    TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
                     turtle_pool.FirstAvailable()->Init(SCREEN_WIDTH+32, TURTLE_ROW_0, -FAST_PLATFORM_SPEED);
@@ -779,20 +877,21 @@ public:
 	virtual void Draw()
 	{
         char text[256];
-        int draw_highscore = glitched ? 6660 : hiScore;
         /* Score */
         snprintf(text, 256, "HI-SCORE");
         engine->drawText(SCREEN_WIDTH / 2, 1, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_white);
-        snprintf(text, 256, "%05d", draw_highscore);
-        engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
         snprintf(text, 256, "1-UP");
         engine->drawText(SCREEN_WIDTH / 4, 1, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_white);
         if (!glitched) {
+            snprintf(text, 256, "%05d", hiScore);
+            engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
             snprintf(text, 256, "%05d", score);
             engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
         } else {
+            snprintf(text, 256, "666");
+            engine->drawText(SCREEN_WIDTH / 2, 17, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_hell);
             snprintf(text, 256, "natas");
-            engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_red);
+            engine->drawText(SCREEN_WIDTH / 4, 17, text, H_ALIGN::RIGHT, V_ALIGN::TOP, c_hell);
         }
         
         
@@ -862,8 +961,11 @@ public:
             SDL_Log("Game Over!");
             game_over = true;
             player->enabled = false;
-            engine->stopMusic();
+            engine->stopAllSounds();
             engine->playSound(s_game_over);
+            engine->setPostFX(CRT);
+            glitch_timer = 0.f;
+            glitched = false;
 		}
         
         else if (m == PLAYER_DROWN)
@@ -890,7 +992,7 @@ public:
         {
             engine->playSound( s_goal );
             score += 50;
-            score += game_timer * 10;
+            score += round(game_timer) * 10;
             victory_time = game_timer;
             show_victory_timer = 4.f;
             game_timer = GAME_TIMER;
@@ -908,6 +1010,20 @@ public:
                 engine->stopMusic();
                 engine->playSound(s_level_win);
             }
+        }
+        
+        else if (m == BUG_COLLECTED)
+        {
+            if (!glitched) {
+                score200_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+16);
+                score += 200;
+            } else {
+                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+16);
+                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+32);
+                score += 1332;
+            }
+            bug->enabled = false;
+            SDL_Log("Bug Collected!");
         }
 	}
 
@@ -947,6 +1063,8 @@ public:
         
         delete grudge;
 		delete player;
+        delete bug;
+        delete croc;
         delete player_drown;
         delete player_roadkill;
 	}

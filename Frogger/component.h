@@ -60,3 +60,13 @@ public:
 	virtual void Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, ObjectPool<GameObject> * coll_objects, Message messageType);
 	virtual void Update(float dt);
 };
+
+class SingleCollideComponent : public Component
+{
+    GameObject * coll_object; // collision will be tested with these objects
+    Message msg;
+
+public:
+    virtual void Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, GameObject * coll_object, Message messageType);
+    virtual void Update(float dt);
+};

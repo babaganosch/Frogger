@@ -9,6 +9,8 @@ enum class H_ALIGN { LEFT, CENTER, RIGHT };
 enum class V_ALIGN { TOP, CENTER, BOT };
 enum class DIRECTION { NONE, LEFT, RIGHT, UP, DOWN };
 
+enum POST_FX { CRT, GLITCH };
+
 class Sprite
 {
     SDL_Renderer * renderer;
@@ -55,6 +57,11 @@ public:
     
     void postProcessing();
     void togglePostProcessing();
+    void setPostFX(POST_FX filter);
+    
+    // Filters
+    void postFX_CRT(SDL_Surface* canvas, SDL_Surface* reference);
+    void postFX_Glitch(SDL_Surface* canvas, SDL_Surface* reference);
     
     // Create a sprite given a string.
     // All sprites are 32*32 pixels.
@@ -96,11 +103,11 @@ public:
         return height;
     }
     
-    // Returns true if engine is in 'glitch' mode
-    bool getGlitch();
-    
+    /* Sound engine */
     void playSound(Mix_Chunk * sound);
+    void playSound(Mix_Chunk * sound, const unsigned int loops);
     void playMusic(Mix_Music * music);
+    void stopAllSounds();
     void stopMusic();
     void pauseMixer();
     void resumeMixer();
@@ -113,6 +120,6 @@ private:
     KeyStatus key;
     int width, height;
     bool enable_post_processing;
-    bool glitch;
+    POST_FX effect_mode;
 };
 

@@ -33,7 +33,7 @@ public:
 
 class TurtleBehaviourComponent : public Component
 {
-
+    RenderComponent * render_component;
 public:
     virtual ~TurtleBehaviourComponent() {}
 
@@ -44,8 +44,8 @@ public:
 
     virtual void Init() {
         /* Reset animation */
-        RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
-        rendererComponent->SetImageIndex(0);
+        render_component = go->GetComponent<RenderComponent*>();
+        render_component->SetImageIndex(0);
         /* Setup turtle bounding box */
         go->bbox_left  = 4;
         go->bbox_top   = 4;
@@ -54,12 +54,11 @@ public:
     }
 
     virtual void Update(float dt) {
-        RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
         go->horizontalPosition += ((Turtle*)go)->speed * dt;
         if (go->horizontalPosition < -go->width) {
             go->enabled = false;
         }
-        if (rendererComponent->GetImageIndex() >= 4.f) {
+        if (render_component->GetImageIndex() >= 4.f) {
             ((Turtle*)go)->afloat = false;
         } else {
             ((Turtle*)go)->afloat = true;

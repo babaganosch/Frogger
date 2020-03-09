@@ -70,7 +70,7 @@ void RenderComponent::Update(float dt)
             if (image_index < old_index) {
                 go->Receive(ANIMATION_END);
                 animation_speed = -animation_speed;
-                image_index = image_number+(animation_speed*dt);
+                image_index = image_number - .1f;
             }
         } else {
             if (image_index < 0.f) {
@@ -130,3 +130,40 @@ void CollideComponent::Update(float dt)
 		}
 	}
 }
+
+void SingleCollideComponent::Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, GameObject * coll_object, Message message_type)
+{
+    Component::Create(engine, go, game_objects);
+    this->coll_object = coll_object;
+    this->msg = message_type;
+}
+
+
+void SingleCollideComponent::Update(float dt)
+{
+    GameObject * go0 = coll_object;
+    if (go0->enabled)
+    {
+        /* Other bounding box */
+        int go0_bbox_left  = go0->horizontalPosition + go0->bbox_left;
+        int go0_bbox_right = go0->horizontalPosition + go0->bbox_right;
+        int go0_bbox_top   = go0->verticalPosition   + go0->bbox_top;
+        int go0_bbox_bot   = go0->verticalPosition   + go0->bbox_bot;
+        /* Our bounding box */
+        int go_bbox_left   = go->horizontalPosition  + go->bbox_left;
+        int go_bbox_right  = go->horizontalPosition  + go->bbox_right;
+        int go_bbox_top    = go->verticalPosition    + go->bbox_top;
+        int go_bbox_bot    = go->verticalPosition    + go->bbox_bot;
+        /* Are we colliding? */
+        if ((go0_bbox_left  < go_bbox_right) &&
+            (go0_bbox_right > go_bbox_left)  &&
+            (go0_bbox_bot   > go_bbox_top)   &&
+            (go0_bbox_top   < go_bbox_bot))
+        {
+            go->Receive(msg);
+            go0->Receive(msg);
+        }
+    }
+    
+}
+

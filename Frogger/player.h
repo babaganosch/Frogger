@@ -81,6 +81,16 @@ public:
             Send(POCKET_REACHED);
             Reset();
         }
+        if (m == GRUDGE_COLLIDE)
+        {
+            Send(GAME_OVER);
+            lives = -1;
+            Die();
+        }
+        if (m == BUG_COLLECTED)
+        {
+            Send(BUG_COLLECTED);
+        }
     }
 
     void RemoveLife()
@@ -95,7 +105,7 @@ class PlayerBehaviourComponent : public Component
     double move_distance;
     double move_cooldown;
     int    top_y;
-    
+    RenderComponent * render_component;
     DIRECTION moving;
     
     enum SPRITE_INDEX {
@@ -132,8 +142,8 @@ public:
         go->bbox_bot   = go->height -4;
         
         /* Make sure the frog faces upwards */
-        RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
-        rendererComponent->SetImageIndex(IDLE_VERTICAL);
+        render_component = go->GetComponent<RenderComponent*>();
+        render_component->SetImageIndex(IDLE_VERTICAL);
         go->image_flip = SDL_FLIP_NONE;
 	}
 
@@ -180,29 +190,28 @@ public:
 	{
         if (move_distance > 0.f) {
             /* AYY, MOVE! */
-            RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
             double dist = clamp(dt * move_speed, 0.f, move_distance);
             switch (moving) {
                 case DIRECTION::RIGHT:
-                    rendererComponent->SetImageIndex(MOVING_HORIZONTAL);
+                    render_component->SetImageIndex(MOVING_HORIZONTAL);
                     go->image_flip = SDL_FLIP_HORIZONTAL;
                     go->horizontalPosition += dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::LEFT:
-                    rendererComponent->SetImageIndex(MOVING_HORIZONTAL);
+                    render_component->SetImageIndex(MOVING_HORIZONTAL);
                     go->image_flip = SDL_FLIP_NONE;
                     go->horizontalPosition -= dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::UP:
-                    rendererComponent->SetImageIndex(MOVING_VERTICAL);
+                    render_component->SetImageIndex(MOVING_VERTICAL);
                     go->image_flip = SDL_FLIP_NONE;
                     go->verticalPosition  -= dist;
                     move_distance -= dist;
                     break;
                 case DIRECTION::DOWN:
-                    rendererComponent->SetImageIndex(MOVING_VERTICAL);
+                    render_component->SetImageIndex(MOVING_VERTICAL);
                     go->image_flip = SDL_FLIP_VERTICAL;
                     go->verticalPosition  += dist;
                     move_distance -= dist;
@@ -211,15 +220,14 @@ public:
             }
         } else {
             /* STOP MOVING */
-            RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
             switch (moving) {
                 case DIRECTION::RIGHT:
                 case DIRECTION::LEFT:
-                    rendererComponent->SetImageIndex(IDLE_HORIZONTAL);
+                    render_component->SetImageIndex(IDLE_HORIZONTAL);
                     break;
                 case DIRECTION::UP:
                 case DIRECTION::DOWN:
-                    rendererComponent->SetImageIndex(IDLE_VERTICAL);
+                    render_component->SetImageIndex(IDLE_VERTICAL);
                     break;
                 case DIRECTION::NONE: break;
             }

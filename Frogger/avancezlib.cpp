@@ -57,7 +57,7 @@ bool AvancezLib::init(int width, int height)
     
     // Enable Post Processing
     enable_post_processing = true;
-    glitch = false;
+    effect_mode = CRT;
 
     // Initialize renderer color
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -177,10 +177,6 @@ void AvancezLib::togglePostProcessing() {
     enable_post_processing = !enable_post_processing;
 }
 
-bool AvancezLib::getGlitch() {
-    return glitch;
-}
-
 void AvancezLib::postProcessing() {
     if (!enable_post_processing) return;
     
@@ -201,87 +197,14 @@ void AvancezLib::postProcessing() {
     SDL_Surface *copy   = SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask);
     SDL_BlitSurface(source,NULL,copy,NULL);
     SDL_RenderClear(renderer);
-    float centerX = width/2, centerY = height/2;
-    /* This is my Post processing */
-    const int glitch_intervall = 250; /* in ms */
-    const int warp_y0 = irandom(height-1);
-    const int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
-    const int warp_c0 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 4000;
-    const int warp_c1 = ((int)(SDL_GetTicks() / 10.f)+glitch_intervall) % 4000;
-    const int glitch_y0 = 18;
-    const int glitch_y1 = (height / 3);
-    const int glitch_y2 = (height / 4)*3;
-    const int glitch_y3 = glitch_y2 + 16;
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-            
-            /* Chromatic Aberration */
-            int offsetX = 5 * ((x - centerX) / centerX);
-            int offsetY = 2 * ((y - centerY) / centerY);
-            int yy1 = clamp(y-offsetY, 0, height);
-            int yy2 = clamp(y+offsetY, 0, height);
-            int xx1 = clamp(x-offsetX, 0, width-5);
-            int xx2 = clamp(x+offsetX, 0, width-5);
-            
-            ((int*)source->pixels)[(y * width) + x]  = (((int*)copy->pixels)[(y * width)   + x]   & 0x00FF0000);
-            ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy1 * width) + xx1] & 0xFF000000);
-            ((int*)source->pixels)[(y * width) + x] += (((int*)copy->pixels)[(yy2 * width) + xx2] & 0x0000FF00);
-            
-            /* Vignette */
-            float vig = x * y * ( width - x ) * ( height - y ) * 8.0;
-            vig = pow(vig, 0.25);
-            int alpha = (int)clamp(vig, 0, 255);
-            if (alpha == 0) alpha = 255;
-            if (x == 0 || x == width || y == 0 || y == height) alpha = 0;
-            ((int*)source->pixels)[(y * width) + x] += alpha;
-            
-            /* Noise (UGLY) */
-            if (percentChance( .75 ) && x > 1 && x < width-1) {
-                
-                /* Amount of noise */
-                int noise = 0x20202000;
-                if (percentChance(33)) {
-                    noise = 0x10101000;
-                } else if (percentChance(50)) {
-                    noise = 0x25252500;
-                }
-                
-                /* Warp */
-                ((int*)source->pixels)[(y * width) + x-2] = ((int*)source->pixels)[(y * width) + x-2] | noise;
-                ((int*)source->pixels)[(y * width) + x-1] = ((int*)source->pixels)[(y * width) + x-1] | noise;
-                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x]   | noise;
-                ((int*)source->pixels)[(y * width) + x+1] = ((int*)source->pixels)[(y * width) + x+1] | noise;
-                ((int*)source->pixels)[(y * width) + x+2] = ((int*)source->pixels)[(y * width) + x+2] | noise;
-            }
-            
-            /* Screen Tearing */
-            if (y == warp_y0 || y == warp_y1) {
-                ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
-            }
-            
-            /* Glitch */
-            if (warp_c0 <= 10 || (warp_c0 >= glitch_intervall && warp_c0 <= glitch_intervall+10)) {
-                ((int*)source->pixels)[(y * width) + x] += 0x40404000;
-            } else if (warp_c1 <= glitch_intervall) {
-                if (y >= glitch_y0 && y <= glitch_y0+3) {
-                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x + 4];
-                } else if (y >= glitch_y1 && y <= glitch_y1+3) {
-                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 4];
-                } else if (y >= glitch_y2 && y <= glitch_y2+4) {
-                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 7];
-                } else if (y >= glitch_y3 && y <= glitch_y3+5) {
-                    ((int*)source->pixels)[(y * width) + x]   = ((int*)source->pixels)[(y * width) + x - 5];
-                }
-                ((int*)source->pixels)[(y * width) + x] += 0x00000100;
-            }
-            
-        }
-    }
     
-    if (warp_c1 > glitch_intervall) {
-        glitch = false;
-    } else {
-        glitch = true;
+    switch (effect_mode) {
+        case CRT:
+            postFX_CRT(source, copy);
+            break;
+        case GLITCH:
+            postFX_Glitch(source, copy);
+            break;
     }
     
     //Create texture from surface pixels
@@ -298,8 +221,140 @@ void AvancezLib::postProcessing() {
     SDL_RenderCopy(renderer, texture, NULL, &rect);
     
     // Free memory
+    SDL_DestroyTexture(texture);
     SDL_FreeSurface(source);
     SDL_FreeSurface(copy);
+}
+
+void AvancezLib::setPostFX(POST_FX filter) {
+    effect_mode = filter;
+}
+
+void AvancezLib::postFX_CRT(SDL_Surface* canvas, SDL_Surface* reference) {
+    const float centerX = width/2, centerY = height/2;
+    /* This is my Post processing */
+    const int warp_y0 = irandom(height-1);
+    const int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            
+            /* Chromatic Aberration */
+            int offsetX = 5 * ((x - centerX) / centerX);
+            int offsetY = 2 * ((y - centerY) / centerY);
+            int yy1 = clamp(y-offsetY, 0, height);
+            int yy2 = clamp(y+offsetY, 0, height);
+            int xx1 = clamp(x-offsetX, 0, width-5);
+            int xx2 = clamp(x+offsetX, 0, width-5);
+            
+            ((int*)canvas->pixels)[(y * width) + x]  = (((int*)reference->pixels)[(y * width)   + x]   & 0x00FF0000);
+            ((int*)canvas->pixels)[(y * width) + x] += (((int*)reference->pixels)[(yy1 * width) + xx1] & 0xFF000000);
+            ((int*)canvas->pixels)[(y * width) + x] += (((int*)reference->pixels)[(yy2 * width) + xx2] & 0x0000FF00);
+            
+            /* Vignette */
+            float vig = x * y * ( width - x ) * ( height - y ) * 8.0;
+            vig = pow(vig, 0.25);
+            int alpha = (int)clamp(vig, 0, 255);
+            if (alpha == 0) alpha = 255;
+            if (x == 0 || x == width || y == 0 || y == height) alpha = 0;
+            ((int*)canvas->pixels)[(y * width) + x] += alpha;
+            
+            /* Noise (UGLY) */
+            if (percentChance( .75 ) && x > 1 && x < width-1) {
+                
+                /* Amount of noise */
+                int noise = 0x20202000;
+                if (percentChance(33)) {
+                    noise = 0x10101000;
+                } else if (percentChance(50)) {
+                    noise = 0x25252500;
+                }
+                
+                /* Warp */
+                ((int*)canvas->pixels)[(y * width) + x-2] = ((int*)canvas->pixels)[(y * width) + x-2] | noise;
+                ((int*)canvas->pixels)[(y * width) + x-1] = ((int*)canvas->pixels)[(y * width) + x-1] | noise;
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x]   | noise;
+                ((int*)canvas->pixels)[(y * width) + x+1] = ((int*)canvas->pixels)[(y * width) + x+1] | noise;
+                ((int*)canvas->pixels)[(y * width) + x+2] = ((int*)canvas->pixels)[(y * width) + x+2] | noise;
+            }
+            
+            /* Screen Tearing */
+            if (y == warp_y0 || y == warp_y1) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x + 4];
+            }
+            
+        }
+    }
+}
+
+void AvancezLib::postFX_Glitch(SDL_Surface* canvas, SDL_Surface* reference) {
+    const float centerX = width/2, centerY = height/2;
+    const int warp_y0 = irandom(height-1);
+    const int warp_y1 = (int)(SDL_GetTicks() / 10.f) % height-1;
+    const int glitch_y0 = 18;
+    const int glitch_y1 = (height / 3);
+    const int glitch_y2 = (height / 4)*3;
+    const int glitch_y3 = glitch_y2 + 16;
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            
+            /* Chromatic Aberration */
+            int offsetX = 5 * ((x - centerX) / centerX);
+            int offsetY = 2 * ((y - centerY) / centerY);
+            int yy1 = clamp(y-offsetY, 0, height);
+            int yy2 = clamp(y+offsetY, 0, height);
+            int xx1 = clamp(x-offsetX, 0, width-5);
+            int xx2 = clamp(x+offsetX, 0, width-5);
+            
+            ((int*)canvas->pixels)[(y * width) + x]  = (((int*)reference->pixels)[(y * width)   + x]   & 0x00FF0000);
+            ((int*)canvas->pixels)[(y * width) + x] += (((int*)reference->pixels)[(yy1 * width) + xx1] & 0xFF000000);
+            ((int*)canvas->pixels)[(y * width) + x] += (((int*)reference->pixels)[(yy2 * width) + xx2] & 0x0000FF00);
+            
+            /* Vignette */
+            float vig = x * y * ( width - x ) * ( height - y ) * 8.0;
+            vig = pow(vig, 0.25);
+            int alpha = (int)clamp(vig, 0, 255);
+            if (alpha == 0) alpha = 255;
+            if (x == 0 || x == width || y == 0 || y == height) alpha = 0;
+            ((int*)canvas->pixels)[(y * width) + x] += alpha;
+            
+            /* Noise (UGLY) */
+            if (percentChance( 7.5f ) && x > 1 && x < width-1) {
+                
+                /* Amount of noise */
+                int noise = 0x30303000;
+                if (percentChance(33)) {
+                    noise = 0x20202000;
+                } else if (percentChance(50)) {
+                    noise = 0x35353500;
+                }
+                
+                /* Warp */
+                ((int*)canvas->pixels)[(y * width) + x-2] = ((int*)canvas->pixels)[(y * width) + x-2] | noise;
+                ((int*)canvas->pixels)[(y * width) + x-1] = ((int*)canvas->pixels)[(y * width) + x-1] | noise;
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x]   | noise;
+                ((int*)canvas->pixels)[(y * width) + x+1] = ((int*)canvas->pixels)[(y * width) + x+1] | noise;
+                ((int*)canvas->pixels)[(y * width) + x+2] = ((int*)canvas->pixels)[(y * width) + x+2] | noise;
+            }
+            
+            /* Screen Tearing */
+            if (y == warp_y0 || y == warp_y1) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x + 4];
+            }
+            
+            /* Glitch */
+            if (y >= glitch_y0 && y <= glitch_y0+3) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x + 4];
+            } else if (y >= glitch_y1 && y <= glitch_y1+3) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x - 4];
+            } else if (y >= glitch_y2 && y <= glitch_y2+4) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x - 7];
+            } else if (y >= glitch_y3 && y <= glitch_y3+5) {
+                ((int*)canvas->pixels)[(y * width) + x]   = ((int*)canvas->pixels)[(y * width) + x - 5];
+            }
+            
+            ((int*)canvas->pixels)[(y * width) + x] += 0x20202000;;
+        }
+    }
 }
 
 void AvancezLib::swapBuffers() {
@@ -320,6 +375,14 @@ void AvancezLib::playSound(Mix_Chunk * sound) {
     }
 }
 
+void AvancezLib::playSound(Mix_Chunk * sound, const unsigned int loops) {
+    // Play sound effect
+    if( Mix_PlayChannel( -1, sound, loops ) == -1 )
+    {
+        SDL_Log("Failed to play sound!");
+    }
+}
+
 void AvancezLib::playMusic(Mix_Music * music) {
     // Stop the old song, and start a new
     Mix_HaltMusic();
@@ -327,6 +390,10 @@ void AvancezLib::playMusic(Mix_Music * music) {
     {
         SDL_Log("Failed to start the music!");
     }
+}
+
+void AvancezLib::stopAllSounds() {
+    Mix_HaltChannel(-1);
 }
 
 void AvancezLib::stopMusic() {

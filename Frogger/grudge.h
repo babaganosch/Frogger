@@ -22,13 +22,15 @@ public:
         GameObject::Init();
         horizontalPosition = x;
         verticalPosition   = y;
+        bbox_left  = 4;
+        bbox_top   = 8;
         target_x = 0;
         target_y = 0;
     }
     
     void SetTarget(int x, int y) {
-        target_x = x;
-        target_y = y;
+        target_x = x - (CELL_S/2);
+        target_y = y - (CELL_S/2);
     }
 
     virtual void Receive(Message m) {}
@@ -49,8 +51,6 @@ public:
 
     virtual void Init() {
         /* Reset animation */
-        RenderComponent* rendererComponent = go->GetComponent<RenderComponent*>();
-        rendererComponent->SetImageIndex(0);
         speed = 30;
     }
 
