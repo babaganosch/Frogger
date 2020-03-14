@@ -5,6 +5,8 @@
 #include "object_pool.h"
 #include "game_object.h"
 
+const unsigned int TOP_HALF = 256;
+
 class GameObject;
 class AvancezLib;
 class Sprite;
@@ -68,5 +70,17 @@ class SingleCollideComponent : public Component
 
 public:
     virtual void Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, GameObject * coll_object, Message messageType);
+    virtual void Update(float dt);
+};
+
+class TopCollideComponent : public CollideComponent
+{
+public:
+    virtual void Update(float dt);
+};
+
+class BottomCollideComponent : public CollideComponent
+{
+public:
     virtual void Update(float dt);
 };

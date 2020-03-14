@@ -41,6 +41,17 @@ const float FAST_CAR_SPEED           = 200.f;
 
 const float SNAKE_SPEED              = 40.f;
 
+/* Draw colors */
+const SDL_Color c_white  = { 255, 255, 255, 255 };
+const SDL_Color c_black  = { 0,   0,   0,   255 };
+const SDL_Color c_transp = { 0,   0,   0,   128 };
+const SDL_Color c_red    = { 255, 0,   0,   255 };
+const SDL_Color c_yellow = { 255, 255, 0,   255 };
+const SDL_Color c_blue   = { 0,   0,   255, 255 };
+const SDL_Color c_green  = { 33,  222, 0,   255 };
+const SDL_Color c_river  = { 0,   0,   71,  255 };
+const SDL_Color c_hell   = { 151, 0,   247, 255 }; /* Purple, but gets shifted to about RED */
+
 
 
 
@@ -61,6 +72,8 @@ float game_speed = 1.f; // Game speed is increased each level (5 delivered frogs
 #include "grudge.h"
 #include "bug.h"
 #include "croc.h"
+#include "crocodile.h"
+#include "pause_screen.h"
 
 #include "game.h"
 

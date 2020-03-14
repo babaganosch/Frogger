@@ -26,6 +26,7 @@ public:
         bbox_top   = 8;
         target_x = 0;
         target_y = 0;
+        enabled = false;
     }
     
     void SetTarget(int x, int y) {

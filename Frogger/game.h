@@ -1,15 +1,5 @@
 #pragma once
 
-/* Draw colors */
-const SDL_Color c_white  = { 255, 255, 255, 255 };
-const SDL_Color c_black  = { 0,   0,   0,   255 };
-const SDL_Color c_transp = { 0,   0,   0,   128 };
-const SDL_Color c_red    = { 255, 0,   0,   255 };
-const SDL_Color c_yellow = { 255, 255, 0,   255 };
-const SDL_Color c_green  = { 33,  222, 0,   255 };
-const SDL_Color c_river  = { 0,   0,   71,  255 };
-const SDL_Color c_hell   = { 151, 0,   247, 255 }; /* Purple, but gets shifted to about RED */
-
 class Game : public GameObject
 {
 	std::set<GameObject*> game_objects;	// http://www.cplusplus.com/reference/set/set/
@@ -21,6 +11,7 @@ class Game : public GameObject
     Croc * croc;
     PlayerDeath * player_drown;
     PlayerDeath * player_roadkill;
+    PauseScreen * pause_screen;
 	Sprite * life_sprite;
     Sprite * grass_purple;
     Sprite * grass_top;
@@ -43,6 +34,7 @@ class Game : public GameObject
     ObjectPool<ScoreAnimation>    score200_pool;
     
     /* Platform pools */
+    ObjectPool<Crocodile> crocodile_pool;
     ObjectPool<Turtle> turtle_pool;
     ObjectPool<Turtle> sinkable_turtle_pool;
     ObjectPool<Log>    log_pool_small;
@@ -112,6 +104,15 @@ public:
 
 		this->engine = engine;
         
+        // Pause Screen
+        pause_screen = new PauseScreen();
+        PauseScreenBehaviourComponent * pause_screen_behaviour = new PauseScreenBehaviourComponent();
+        pause_screen_behaviour->Create(engine, pause_screen, &game_objects);
+        pause_screen->Create();
+        pause_screen->AddComponent(pause_screen_behaviour);
+        pause_screen->AddReceiver(this);
+        AddReceiver(pause_screen);
+        
         // Grudge
         grudge = new Grudge();
         GrudgeBehaviourComponent * grudge_behaviour = new GrudgeBehaviourComponent();
@@ -156,27 +157,29 @@ public:
 		player_behaviour->Create(engine, player, &game_objects);
         
         /* Platform colliders */
-        CollideComponent * large_log_collider = new CollideComponent();
+        TopCollideComponent * crocodile_collider = new TopCollideComponent();
+        crocodile_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &crocodile_pool, ON_GROUND);
+        TopCollideComponent * large_log_collider = new TopCollideComponent();
         large_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_large, ON_GROUND);
-        CollideComponent * medium_log_collider = new CollideComponent();
+        TopCollideComponent * medium_log_collider = new TopCollideComponent();
         medium_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_medium, ON_GROUND);
-        CollideComponent * small_log_collider = new CollideComponent();
+        TopCollideComponent * small_log_collider = new TopCollideComponent();
         small_log_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &log_pool_small, ON_GROUND);
-        CollideComponent * turtle_collider = new CollideComponent();
+        TopCollideComponent * turtle_collider = new TopCollideComponent();
         turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &turtle_pool, ON_GROUND);
         TurtleCollideComponent * sinkable_turtle_collider = new TurtleCollideComponent();
         sinkable_turtle_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &sinkable_turtle_pool, ON_GROUND);
         
         /* Vehicle colliders */
-        CollideComponent * car0_collider = new CollideComponent();
+        BottomCollideComponent * car0_collider = new BottomCollideComponent();
         car0_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_0, HIT);
-        CollideComponent * car1_collider = new CollideComponent();
+        BottomCollideComponent * car1_collider = new BottomCollideComponent();
         car1_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_1, HIT);
-        CollideComponent * car2_collider = new CollideComponent();
+        BottomCollideComponent * car2_collider = new BottomCollideComponent();
         car2_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_2, HIT);
-        CollideComponent * car3_collider = new CollideComponent();
+        BottomCollideComponent * car3_collider = new BottomCollideComponent();
         car3_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_3, HIT);
-        CollideComponent * car4_collider = new CollideComponent();
+        BottomCollideComponent * car4_collider = new BottomCollideComponent();
         car4_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &car_pool_4, HIT);
         
         /* Enemy collider */
@@ -186,9 +189,11 @@ public:
         grudge_collider->Create(engine, player, &game_objects, grudge, GRUDGE_COLLIDE);
         CrocCollideComponent * croc_collider = new CrocCollideComponent();
         croc_collider->Create(engine, player, &game_objects, croc, HIT);
+        CrocodileHeadCollideComponent * crocodile_head_collider = new CrocodileHeadCollideComponent();
+        crocodile_head_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &crocodile_pool, HIT);
         
         /* Goal colliders */
-        CollideComponent * pocket_collider = new CollideComponent();
+        TopCollideComponent * pocket_collider = new TopCollideComponent();
         pocket_collider->Create(engine, player, &game_objects, (ObjectPool<GameObject>*) &goal_pool, POCKET_REACHED);
         SingleCollideComponent * bug_collider = new SingleCollideComponent();
         bug_collider->Create(engine, player, &game_objects, bug, BUG_COLLECTED);
@@ -206,6 +211,7 @@ public:
         player->AddReceiver(this);
         game_objects.insert(player);
         /* Player collision components */
+        player->AddComponent(crocodile_collider);
         player->AddComponent(large_log_collider);
         player->AddComponent(medium_log_collider);
         player->AddComponent(small_log_collider);
@@ -221,6 +227,7 @@ public:
         player->AddComponent(croc_collider);
         player->AddComponent(pocket_collider);
         player->AddComponent(bug_collider);
+        player->AddComponent(crocodile_head_collider);
         
         /* Player death animation */
         player_drown = new PlayerDeath();
@@ -252,6 +259,21 @@ public:
             (*pocket)->AddComponent(pocket_behaviour);
             (*pocket)->AddReceiver(this);
             game_objects.insert(*pocket);
+        }
+        
+        crocodile_pool.Create(3);
+        for (auto crocodile = crocodile_pool.pool.begin(); crocodile != crocodile_pool.pool.end(); crocodile++)
+        {
+            CrocodileBehaviourComponent * crocodile_behaviour = new CrocodileBehaviourComponent();
+            crocodile_behaviour->Create(engine, *crocodile, &game_objects);
+            RenderComponent * crocodile_render = new RenderComponent();
+            crocodile_render->Create(engine, *crocodile, &game_objects, (data_path + "crocodile/crocodile0.bmp").c_str(), 1.f);
+            crocodile_render->AddSprite( (data_path + "crocodile/crocodile1.bmp").c_str() );
+            (*crocodile)->Create();
+            (*crocodile)->AddComponent(crocodile_behaviour);
+            (*crocodile)->AddComponent(crocodile_render);
+            (*crocodile)->AddReceiver(this);
+            game_objects.insert(*crocodile);
         }
         
         turtle_pool.Create(30);
@@ -471,9 +493,9 @@ public:
 	virtual void Init()
 	{
 		player->Init();
+        pause_screen->Init();
         int grudge_start_x = percentChance(50) ? SCREEN_WIDTH : -32;
         grudge->Init(grudge_start_x, irandom(SCREEN_HEIGHT));
-        grudge->enabled = false;
 
         /* Globals */
 		enabled     = true;
@@ -570,25 +592,26 @@ public:
                 engine->resumeMixer();
                 SDL_Log("Game UnPaused");
             }
+            Send(TOGGLE_PAUSE);
             button_bounce_timer = .25f;
         }
     }
     
     void Restart() {
-        if (button_bounce_timer <= 0.f) {
-            player->Init();
-            game_over   = false;
-            victory     = false;
-            score       = 0;
-            level       = 0;
-            game_timer  = GAME_TIMER;
-            game_speed  = 1.f;
-            button_bounce_timer = .25f;
-            extra_frog_counter  = 0;
-            ResetPockets();
-            engine->stopAllSounds();
-            engine->playMusic(m_music_0);
-        }
+        player->Init();
+        int grudge_start_x = percentChance(50) ? SCREEN_WIDTH : -32;
+        grudge->Init(grudge_start_x, irandom(SCREEN_HEIGHT));
+        game_over   = false;
+        victory     = false;
+        score       = 0;
+        level       = 0;
+        game_timer  = GAME_TIMER;
+        game_speed  = 1.f;
+        button_bounce_timer = .25f;
+        extra_frog_counter  = 0;
+        ResetPockets();
+        engine->stopAllSounds();
+        engine->playMusic(m_music_1);
     }
     
     void SpawnBug() {
@@ -623,11 +646,8 @@ public:
 			Destroy();
 			engine->quit();
 		}
-        if (keys.restart) {
-            Restart();
-        }
         if (keys.pause) {
-            TogglePause();
+            if (!paused && !glitched) TogglePause();
         }
         if (keys.opt0) {
             if (button_bounce_timer <= 0.f) {
@@ -721,7 +741,7 @@ public:
                 glitch_timer = 0.f;
             }
         } else {
-            if (glitch_timer >= 45.f && !game_over) {
+            if (glitch_timer >= 20.f && !game_over) {
                 engine->setPostFX(GLITCH);
                 engine->pauseMixer();
                 engine->playSound( s_glitched, 1 );
@@ -778,7 +798,13 @@ public:
             if (log_timer_top <= 0.f) {
                 /* SPAWN MEDIUM LOG */
                 log_timer_top = 3.f;
-                log_pool_medium.FirstAvailable()->Init(-114, LOG_ROW_2+6, FAST_PLATFORM_SPEED);
+                if (percentChance(33)) {
+                    /* SPAWN CROCODILE */
+                    crocodile_pool.FirstAvailable()->Init(-94, LOG_ROW_2-2, FAST_PLATFORM_SPEED);
+                } else {
+                    /* SPAWN LOG */
+                    log_pool_medium.FirstAvailable()->Init(-114, LOG_ROW_2+6, FAST_PLATFORM_SPEED);
+                }
             }
             if (turtle_timer_top <= 0.f) {
                 /* SPAWN TURTLES */
@@ -940,9 +966,7 @@ public:
         
         /* Paused */
         if (paused) {
-            engine->drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, c_transp, false);
-            snprintf(text, 256, "Game Paused");
-            engine->drawText(SCREEN_WIDTH / 2, SCREEN_HEIGHT/2.5, text, H_ALIGN::CENTER, V_ALIGN::TOP, c_red);
+            pause_screen->Update(0);
         }
         
         engine->postProcessing();
@@ -962,6 +986,7 @@ public:
             game_over = true;
             player->enabled = false;
             engine->stopAllSounds();
+            engine->stopMusic();
             engine->playSound(s_game_over);
             engine->setPostFX(CRT);
             glitch_timer = 0.f;
@@ -1015,15 +1040,35 @@ public:
         else if (m == BUG_COLLECTED)
         {
             if (!glitched) {
-                score200_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+16);
+                score200_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+8);
                 score += 200;
             } else {
-                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+16);
-                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+32);
+                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+8);
+                score666_pool.FirstAvailable()->Init(bug->horizontalPosition, bug->verticalPosition+24);
                 score += 1332;
             }
             bug->enabled = false;
             SDL_Log("Bug Collected!");
+        }
+        
+        else if (m == BTN_RESUME)
+        {
+            SDL_Log("Game Resumed");
+            TogglePause();
+        }
+        
+        else if (m == BTN_RETRY)
+        {
+            SDL_Log("Game Restarted");
+            TogglePause();
+            Restart();
+        }
+        
+        else if (m == BTN_EXIT)
+        {
+            SDL_Log("Bye Bye!");
+            Destroy();
+            engine->quit();
         }
 	}
 
@@ -1067,5 +1112,6 @@ public:
         delete croc;
         delete player_drown;
         delete player_roadkill;
+        delete pause_screen;
 	}
 };

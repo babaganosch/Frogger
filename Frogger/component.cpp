@@ -3,6 +3,7 @@
 #include "avancezlib.h"
 #include "util.h"
 
+
 void Component::Create(AvancezLib * engine, GameObject * go, std::set<GameObject*>* game_objects)
 {
 	this->go = go;
@@ -129,6 +130,16 @@ void CollideComponent::Update(float dt)
 			}
 		}
 	}
+}
+
+void TopCollideComponent::Update(float dt)
+{
+    if (go->verticalPosition <= TOP_HALF) CollideComponent::Update(dt);
+}
+
+void BottomCollideComponent::Update(float dt)
+{
+    if (go->verticalPosition >= TOP_HALF) CollideComponent::Update(dt);
 }
 
 void SingleCollideComponent::Create(AvancezLib* engine, GameObject * go, std::set<GameObject*> * game_objects, GameObject * coll_object, Message message_type)

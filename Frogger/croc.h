@@ -73,27 +73,29 @@ public:
         
     }
     virtual void Update(float dt) {
-        GameObject * go0 = coll_object;
-        if (go0->enabled && ((Croc*)go0)->bite)
-        {
-            /* Other bounding box */
-            int go0_bbox_left  = go0->horizontalPosition + go0->bbox_left;
-            int go0_bbox_right = go0->horizontalPosition + go0->bbox_right;
-            int go0_bbox_top   = go0->verticalPosition   + go0->bbox_top;
-            int go0_bbox_bot   = go0->verticalPosition   + go0->bbox_bot;
-            /* Our bounding box */
-            int go_bbox_left   = go->horizontalPosition  + go->bbox_left;
-            int go_bbox_right  = go->horizontalPosition  + go->bbox_right;
-            int go_bbox_top    = go->verticalPosition    + go->bbox_top;
-            int go_bbox_bot    = go->verticalPosition    + go->bbox_bot;
-            /* Are we colliding? */
-            if ((go0_bbox_left  < go_bbox_right) &&
-                (go0_bbox_right > go_bbox_left)  &&
-                (go0_bbox_bot   > go_bbox_top)   &&
-                (go0_bbox_top   < go_bbox_bot))
+        if (go->verticalPosition <= TOP_HALF) {
+            GameObject * go0 = coll_object;
+            if (go0->enabled && ((Croc*)go0)->bite)
             {
-                go->Receive(msg);
-                go0->Receive(msg);
+                /* Other bounding box */
+                int go0_bbox_left  = go0->horizontalPosition + go0->bbox_left;
+                int go0_bbox_right = go0->horizontalPosition + go0->bbox_right;
+                int go0_bbox_top   = go0->verticalPosition   + go0->bbox_top;
+                int go0_bbox_bot   = go0->verticalPosition   + go0->bbox_bot;
+                /* Our bounding box */
+                int go_bbox_left   = go->horizontalPosition  + go->bbox_left;
+                int go_bbox_right  = go->horizontalPosition  + go->bbox_right;
+                int go_bbox_top    = go->verticalPosition    + go->bbox_top;
+                int go_bbox_bot    = go->verticalPosition    + go->bbox_bot;
+                /* Are we colliding? */
+                if ((go0_bbox_left  < go_bbox_right) &&
+                    (go0_bbox_right > go_bbox_left)  &&
+                    (go0_bbox_bot   > go_bbox_top)   &&
+                    (go0_bbox_top   < go_bbox_bot))
+                {
+                    go->Receive(msg);
+                    go0->Receive(msg);
+                }
             }
         }
     }

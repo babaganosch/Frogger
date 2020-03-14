@@ -107,6 +107,7 @@ void AvancezLib::processInput()
             case SDLK_q:
                 key.esc = true;
                 break;
+            case SDLK_RETURN:
             case SDLK_SPACE:
                 key.fire = true;
                 break;
@@ -138,6 +139,7 @@ void AvancezLib::processInput()
         {
             switch (event.key.keysym.sym)
             {
+            case SDLK_RETURN:
             case SDLK_SPACE:
                 key.fire = false;
                 break;
